@@ -1,0 +1,6 @@
+<kobalt-plugin>
+    <name>kobalt-android</name>
+    <plugin-actors>
+        <class-name>com.beust.kobalt.plugin.android.AndroidPlugin</class-name>
+    </plugin-actors>
+</kobalt-plugin>
