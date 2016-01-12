@@ -264,7 +264,7 @@ public class AndroidPlugin @Inject constructor(val dependencyManager: Dependency
         File(project.classesDir(context)).mkdirs()
         return IncrementalTaskInfo(
                 inputChecksum = inputChecksum(project.classesDir(context)),
-                outputChecksum = "1",
+                outputChecksum = { -> null }, // TODO: return real checksum
                 task = { project -> doTaskGenerateDex(project) }
         )
     }
