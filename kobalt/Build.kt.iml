@@ -7,6 +7,7 @@
       <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
     </content>
     <content url="file://D:/Java/jdk1.8.0_05" />
+    <content url="file://D:/android/adt-bundle-windows-x86_64-20140321/sdk" />
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module-library">
@@ -20,5 +21,6 @@
         </SOURCES>
       </library>
     </orderEntry>
+    <orderEntry type="library" name="kobalt.jar" level="project" />
   </component>
 </module>
