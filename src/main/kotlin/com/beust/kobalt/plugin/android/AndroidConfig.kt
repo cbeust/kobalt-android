@@ -1,4 +1,7 @@
-class com.beust.kobalt.plugin.android
+package com.beust.kobalt.plugin.android
+
+import com.beust.kobalt.api.Project
+import com.beust.kobalt.api.annotation.Directive
 
 class AndroidConfig(val project: Project,
         var compileSdkVersion : String? = null,

@@ -51,6 +51,8 @@ public class AndroidPlugin @Inject constructor(val dependencyManager: Dependency
 
     override val name = PLUGIN_NAME
 
+    fun projects(project: Project) = project.projectProperties.get("dependentProjects") as List<ProjectDescription>
+
     fun isAndroid(project: Project) = configurationFor(project) != null
 
     override fun apply(project: Project, context: KobaltContext) {
@@ -154,7 +156,9 @@ public class AndroidPlugin @Inject constructor(val dependencyManager: Dependency
             useErrorStreamAsErrorIndicator = true
         }
 
-        override fun call(args: List<String>) = super.run(arrayListOf(aaptCommand) + args)
+        override fun call(args: List<String>) = super.run(arrayListOf(aaptCommand) + args,
+                errorCallback = { l: List<String> -> println("ERRORS: $l")},
+                successCallback = { l: List<String> -> })
     }
 
     /**
@@ -230,7 +234,9 @@ public class AndroidPlugin @Inject constructor(val dependencyManager: Dependency
         return TaskResult()
     }
 
-    private fun dependencies(project: Project) = dependencyManager.calculateDependencies(project, context, projects,
+    private fun dependencies(project: Project) = dependencyManager.calculateDependencies(project,
+            context,
+            projects(project),
             project.compileDependencies).map {
             it.jarFile.get().path
         }.filterNot {
