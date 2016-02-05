@@ -378,8 +378,9 @@ public class AndroidPlugin @Inject constructor(val dependencyManager: Dependency
         var home = AndroidFiles.androidHomeNoThrows(project, config)
 
         return if (home != null) {
-            val path = Paths.get(KFiles.joinDir(home, "extras", "android", "m2repository"))
-            listOf(HostConfig(path.toUri().toString()))
+            listOf(KFiles.joinDir(home, "extras", "android", "m2repository"),
+                    (KFiles.joinDir(home, "extras", "google", "m2repository")))
+                .map { HostConfig(Paths.get(it).toUri().toString()) }
         } else {
             emptyList()
         }
@@ -428,7 +429,8 @@ public class AndroidPlugin @Inject constructor(val dependencyManager: Dependency
         }
     }
 
-    private fun isAar(id: MavenId) = id.groupId == "com.android.support" && id.artifactId != "support-annotations"
+    private fun isAar(id: MavenId) = (id.groupId == "com.android.support" || id.groupId == "com.google.android")
+            && id.artifactId != "support-annotations"
 
     /**
      * For each com.android.support dependency or aar packaging, add a classpath dependency that points to the
