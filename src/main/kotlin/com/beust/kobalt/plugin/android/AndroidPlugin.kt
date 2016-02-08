@@ -517,4 +517,6 @@ fun AndroidConfig.signingConfig(name: String, init: SigningConfig.() -> Unit) : 
     }
 }
 
-
+//fun main(argv: Array<String>) {
+//    com.beust.kobalt.main(argv)
+//}
