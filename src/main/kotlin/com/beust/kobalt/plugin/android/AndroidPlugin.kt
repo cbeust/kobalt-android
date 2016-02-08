@@ -480,7 +480,7 @@ public class AndroidPlugin @Inject constructor(val dependencyManager: Dependency
     override fun tasksFor(context: KobaltContext): List<DynamicTask> = taskContributor.dynamicTasks
 }
 
-class DefaultConfig(var minSdkVersion: Int? = null,
+class DefaultConfig(var minSdkVersion: Int? = 22,
         val maxSdkVersion: String? = null,
         var targetSdkVersion: String? = null,
         var versionCode: Int? = null,
