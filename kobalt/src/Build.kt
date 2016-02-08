@@ -13,13 +13,15 @@ val p = project {
     name = "kobalt-android"
     artifactId = name
     group = "com.beust"
-    version = "0.10"
+    version = "0.13"
 
     dependencies {
-//        compile(file(homeDir("kotlin/kobalt/kobaltBuild/libs/kobalt-0.356.jar")))
+//        compile(file(homeDir("kotlin/kobalt/kobaltBuild/libs/kobalt-0.505.jar")))
 //         compile("com.beust:kobalt:0.356")
-      compile("com.beust:kobalt-plugin-api:0.503",
-              "com.android.tools.build:builder:2.0.0-alpha3"
+      compile(
+              "com.beust:kobalt:0.505"
+//              "com.beust:kobalt-plugin-api:0.505"
+              ,"com.android.tools.build:builder:2.0.0-alpha3"
               )
     }
 
