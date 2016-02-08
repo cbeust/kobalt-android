@@ -1,4 +1,6 @@
 
+import com.beust.kobalt.file
+import com.beust.kobalt.homeDir
 import com.beust.kobalt.plugin.kotlin.kotlinCompiler
 import com.beust.kobalt.plugin.packaging.assemble
 import com.beust.kobalt.plugin.publish.bintray
@@ -13,16 +15,19 @@ val p = project {
     name = "kobalt-android"
     artifactId = name
     group = "com.beust"
-    version = "0.13"
+    version = "0.14"
 
     dependencies {
-//        compile(file(homeDir("kotlin/kobalt/kobaltBuild/libs/kobalt-0.505.jar")))
+        compile("com.android.tools.build:builder:2.0.0-alpha3",
+                file(homeDir("kotlin/kobalt/kobaltBuild/libs/kobalt-0.506.jar")))
+//        "com.beust:kobalt:0.505"
 //         compile("com.beust:kobalt:0.356")
-      compile(
-              "com.beust:kobalt:0.505"
+//
+//      compile(
+//              "com.beust:kobalt:0.505"
 //              "com.beust:kobalt-plugin-api:0.505"
-              ,"com.android.tools.build:builder:2.0.0-alpha3"
-              )
+//              ,"com.android.tools.build:builder:2.0.0-alpha3"
+//              )
     }
 
     assemble {

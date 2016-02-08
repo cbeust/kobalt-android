@@ -200,8 +200,9 @@ public class AndroidPlugin @Inject constructor(val dependencyManager: Dependency
      * Make sure we compile and generate 1.6 sources unless the build file defined those (which can
      * happen if the developer is using RetroLambda for example).
      */
-    override fun flagsFor(project: Project, context: KobaltContext, currentFlags: List<String>) : List<String> {
-        if (isAndroid(project)) {
+    override fun flagsFor(project: Project, context: KobaltContext, currentFlags: List<String>,
+            suffixesBeingCompiled: List<String>) : List<String> {
+        if (isAndroid(project) && suffixesBeingCompiled.contains(".java")) {
             var found = currentFlags.any { it == "-source" || it == "-target" }
             val result = arrayListOf<String>().apply { addAll(currentFlags) }
             if (! found) {
