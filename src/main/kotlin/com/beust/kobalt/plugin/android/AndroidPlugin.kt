@@ -167,7 +167,7 @@ public class AndroidPlugin @Inject constructor(val dependencyManager: Dependency
     private fun explodeAarFiles(project: Project) : List<File> {
         log(2, "Exploding aars")
         val result = arrayListOf<File>()
-        project.compileDependencies.filter {
+        dependencyManager.calculateTransitiveDependencies(project, context).filter {
             it.jarFile.get().name.endsWith(".aar")
         }.forEach {
             val mavenId = MavenId.create(it.id)
@@ -237,7 +237,7 @@ public class AndroidPlugin @Inject constructor(val dependencyManager: Dependency
     private fun dependencies(project: Project) = dependencyManager.calculateDependencies(project,
             context,
             projects(project),
-            project.compileDependencies).map {
+            allDependencies = project.compileDependencies).map {
             it.jarFile.get().path
         }.filterNot {
             it.contains("android.jar") || it.endsWith(".aar") || it.contains("retrolambda")

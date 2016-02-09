@@ -28,6 +28,7 @@ import com.beust.kobalt.misc.KobaltLogger
 import com.beust.kobalt.misc.log
 import com.beust.kobalt.misc.logWrap
 import java.io.File
+import java.util.*
 
 class KobaltProcessResult : ProcessResult {
     override fun getExitValue(): Int {
@@ -128,25 +129,29 @@ class KobaltResourceMerger {
         return result
     }
 
-    private fun createLibraryDependencies(project: Project, dependencies: List<IClasspathDependency>)
+    /**
+     * Create a ManifestDependency suitable for the Android builder based on a Maven Dependency.
+     */
+    private fun create(project: Project, md: MavenDependency, shortIds: HashMap<String, ManifestDependency>) =
+        object: ManifestDependency {
+            override fun getManifest() = File(AndroidFiles.explodedManifest(project, md.mavenId))
+
+            override fun getName() = md.jarFile.get().path
+
+            override fun getManifestDependencies(): List<ManifestDependency>
+                    = createLibraryDependencies(project, md.directDependencies(), shortIds)
+        }
+
+    private fun createLibraryDependencies(project: Project, dependencies: List<IClasspathDependency>,
+            shortIds : HashMap<String, ManifestDependency>)
             : List<ManifestDependency> {
         val result = arrayListOf<ManifestDependency>()
         dependencies.filter {
                 it is MavenDependency && it.jarFile.get().path.endsWith(".aar")
             }.forEach {
                 val dep = it as MavenDependency
-                result.add(object: ManifestDependency {
-                    override fun getManifest(): File? {
-                        return File(AndroidFiles.explodedManifest(project, dep.mavenId))
-                    }
-
-                    override fun getName() = it.jarFile.get().path
-
-                    override fun getManifestDependencies(): List<ManifestDependency> {
-                        return createLibraryDependencies(project, it.directDependencies())
-                    }
-
-                })
+                val manifestDependency = shortIds.computeIfAbsent(dep.shortId, { create(project, dep, shortIds) })
+                result.add(manifestDependency)
                 it.directDependencies()
             }
             return result
@@ -176,7 +181,8 @@ class KobaltResourceMerger {
             }.filter {
                 it.exists()
             }
-            val libraries = createLibraryDependencies(project, project.compileDependencies)
+            val shortIds = hashMapOf<String, ManifestDependency>()
+            val libraries = createLibraryDependencies(project, project.compileDependencies, shortIds)
             val outManifest = AndroidFiles.mergedManifest(project, variant)
             val outAaptSafeManifestLocation = KFiles.joinDir(project.directory, project.buildDirectory, "generatedSafeAapt")
             val reportFile = File(KFiles.joinDir(project.directory, project.buildDirectory, "manifest-merger-report.txt"))
@@ -191,6 +197,7 @@ class KobaltResourceMerger {
                     outAaptSafeManifestLocation,
                     // TODO: support aar too
                     ManifestMerger2.MergeType.APPLICATION,
+//                    ManifestMerger2.MergeType.LIBRARY,
                     emptyMap() /* placeHolders */,
                     reportFile)
         }
