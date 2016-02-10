@@ -18,15 +18,15 @@ val p = project {
     name = "kobalt-android"
     artifactId = name
     group = "com.beust"
-    version = "0.18"
+    version = "0.19"
 
     dependencies {
         compile("com.android.tools.build:builder:2.0.0-alpha3")
 
         // Kobalt dependencies depending on whether I'm debugging or deploying
 //        compile(KOBALT_DEV)
-//        compile("com.beust:kobalt:$KOBALT_VERSION")
         compile("com.beust:kobalt-plugin-api:$KOBALT_VERSION")
+//        compile("com.beust:kobalt:$KOBALT_VERSION")
     }
 
     assemble {
