@@ -11,14 +11,14 @@ val r = repos("https://dl.bintray.com/cbeust/maven")
 
 //val pl = plugins(file(homeDir("kotlin/kobalt-retrolambda/kobaltBuild/libs/kobalt-retrolambda-0.3.jar")))
 
-val KOBALT_VERSION = "0.511"
-val KOBALT_DEV = file(homeDir("kotlin/kobalt/kobaltBuild/libs/kobalt-0.512.jar"))
+val KOBALT_VERSION = "0.512"
+val KOBALT_DEV = file(homeDir("kotlin/kobalt/kobaltBuild/libs/kobalt-0.513.jar"))
 
 val p = project {
     name = "kobalt-android"
     artifactId = name
     group = "com.beust"
-    version = "0.19"
+    version = "0.20"
 
     dependencies {
         compile("com.android.tools.build:builder:2.0.0-alpha3")
