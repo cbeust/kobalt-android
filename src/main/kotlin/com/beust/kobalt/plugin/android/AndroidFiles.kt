@@ -56,5 +56,7 @@ class AndroidFiles {
         fun preDexed(project: Project, variant: Variant) =
                 KFiles.joinAndMakeDir(intermediates(project), "pre-dexed", variant.toIntermediateDir())
 
+        fun intermediatesClasses(project: Project, vararg dir: String)
+                = KFiles.joinAndMakeDir(intermediates(project), "classes", *dir)
     }
 }
