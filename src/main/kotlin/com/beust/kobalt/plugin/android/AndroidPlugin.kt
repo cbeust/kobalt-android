@@ -370,8 +370,7 @@ public class AndroidPlugin @Inject constructor(val dependencyManager: Dependency
         val aarFiles : Collection<IClasspathDependency> = classpathEntries.get(project.name)
                 ?: emptyList<IClasspathDependency>()
         val classes : Collection<IClasspathDependency>
-                = listOf(FileDependency(AndroidFiles.intermediatesClasses(project, context.variant.toIntermediateDir(),
-                    context.variant.toIntermediateDir())))
+                = listOf(FileDependency(AndroidFiles.intermediatesClasses(project, context)))
 
         return aarFiles + classes
     }
@@ -393,7 +392,7 @@ public class AndroidPlugin @Inject constructor(val dependencyManager: Dependency
     // IBuildDirectoryInterceptor
     override fun intercept(project: Project, context: KobaltContext, buildDirectory: String): String {
         if (isAndroid(project)) {
-            val result = AndroidFiles.intermediatesClasses(project, context.variant.toIntermediateDir())
+            val result = AndroidFiles.intermediatesClasses(project, context)
             return result
         } else {
             return buildDirectory
@@ -405,7 +404,7 @@ public class AndroidPlugin @Inject constructor(val dependencyManager: Dependency
             : CompilerActionInfo {
         val result: CompilerActionInfo =
             if (isAndroid(project)) {
-                val newOutputDir = AndroidFiles.intermediatesClasses(project, context.variant.toIntermediateDir())
+                val newOutputDir = AndroidFiles.intermediatesClasses(project, context)
                 actionInfo.copy(outputDir = File(newOutputDir))
             } else {
                 actionInfo

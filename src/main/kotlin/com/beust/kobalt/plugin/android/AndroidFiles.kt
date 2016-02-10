@@ -1,6 +1,7 @@
 package com.beust.kobalt.plugin.android
 
 import com.beust.kobalt.Variant
+import com.beust.kobalt.api.KobaltContext
 import com.beust.kobalt.api.Project
 import com.beust.kobalt.maven.MavenId
 import com.beust.kobalt.misc.KFiles
@@ -56,7 +57,7 @@ class AndroidFiles {
         fun preDexed(project: Project, variant: Variant) =
                 KFiles.joinAndMakeDir(intermediates(project), "pre-dexed", variant.toIntermediateDir())
 
-        fun intermediatesClasses(project: Project, vararg dir: String)
-                = KFiles.joinAndMakeDir(intermediates(project), "classes", *dir)
+        fun intermediatesClasses(project: Project, context: KobaltContext)
+                = KFiles.joinAndMakeDir(intermediates(project), "classes", context.variant.toIntermediateDir())
     }
 }
