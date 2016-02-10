@@ -365,11 +365,20 @@ public class AndroidPlugin @Inject constructor(val dependencyManager: Dependency
 
     // IClasspathContributor
     override fun entriesFor(project: Project?): Collection<IClasspathDependency> {
-        return if (project != null) {
-            classpathEntries.get(project.name) ?: emptyList()
-        } else {
-            emptyList()
-        }
+        val aarFiles : Collection<IClasspathDependency> = if (project != null) {
+                classpathEntries.get(project.name) ?: emptyList<IClasspathDependency>()
+            } else {
+                emptyList<IClasspathDependency>()
+            }
+        val classes : Collection<IClasspathDependency> = if (project != null) {
+                listOf(FileDependency(KFiles.joinDir(AndroidFiles.intermediates(project),
+                    "classes",
+                    context.variant.toIntermediateDir())))
+                 } else {
+                    arrayListOf<IClasspathDependency>()
+                }
+
+        return aarFiles + classes
     }
 
     // IRepoContributor
