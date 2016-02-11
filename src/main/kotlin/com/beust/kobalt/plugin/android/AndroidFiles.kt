@@ -19,6 +19,9 @@ class AndroidFiles {
             return KFiles.joinDir(dir, "AndroidManifest.xml")
         }
 
+        fun generatedSource(project: Project, context: KobaltContext) = KFiles.joinAndMakeDir(project.directory,
+                project.buildDirectory, "generated", "source", "aidl", context.variant.toIntermediateDir())
+
         fun mergedResourcesNoVariant(project: Project) =
                 KFiles.joinAndMakeDir(AndroidFiles.intermediates(project), "res", "merged")
 

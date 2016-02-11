@@ -37,11 +37,40 @@ import java.nio.file.Paths
  * zipalign
  */
 @Singleton
-public class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager,
+class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager,
         val taskContributor : TaskContributor)
             : ConfigPlugin<AndroidConfig>(), IClasspathContributor, IRepoContributor, ICompilerFlagContributor,
                 ICompilerInterceptor, IBuildDirectoryIncerceptor, IRunnerContributor, IClasspathInterceptor,
-                ISourceDirectoryContributor, IBuildConfigFieldContributor, ITaskContributor, IMavenIdInterceptor {
+                ISourceDirectoryContributor, IBuildConfigFieldContributor, ITaskContributor, IMavenIdInterceptor,
+                ICompilerContributor {
+
+    private val idlCompiler = object: ICompiler {
+        override val sourceSuffixes: List<String>
+            get() = listOf("aidl", "idl")
+
+        /*
+        /Users/beust/android/adt-bundle-mac-x86_64-20140702/sdk/build-tools/23.0.2/aidl -p/Users/beust/android/adt-bundle-mac-x86_64-20140702/sdk/platforms/android-23/framework.aidl -o/Users/beust/t/MaterialAudiobookPlayer/audiobook/build/generated/source/aidl/debug -I/Users/beust/t/MaterialAudiobookPlayer/audiobook/src/main/aidl -I/Users/beust/t/MaterialAudiobookPlayer/audiobook/src/debug/aidl -I/Users/beust/t/MaterialAudiobookPlayer/audiobook/build/intermediates/exploded-aar/com.afollestad.material-dialogs/core/0.8.5.3/aidl -I/Users/beust/t/MaterialAudiobookPlayer/audiobook/build/intermediates/exploded-aar/me.zhanghai.android.materialprogressbar/library/1.1.4/aidl -I/Users/beust/t/MaterialAudiobookPlayer/audiobook/build/intermediates/exploded-aar/com.android.support/recyclerview-v7/23.1.1/aidl -I/Users/beust/t/MaterialAudiobookPlayer/audiobook/build/intermediates/exploded-aar/com.android.support/appcompat-v7/23.1.1/aidl -I/Users/beust/t/MaterialAudiobookPlayer/audiobook/build/intermediates/exploded-aar/com.getbase/floatingactionbutton/1.10.1/aidl -I/Users/beust/t/MaterialAudiobookPlayer/audiobook/build/intermediates/exploded-aar/com.android.support/support-v4/23.1.1/aidl -I/Users/beust/t/MaterialAudiobookPlayer/audiobook/build/intermediates/exploded-aar/com.jakewharton.timber/timber/4.1.0/aidl -I/Users/beust/t/MaterialAudiobookPlayer/audiobook/build/intermediates/exploded-aar/com.github.JakeWharton.RxBinding/rxbinding-kotlin/542cd7e8a4/aidl -I/Users/beust/t/MaterialAudiobookPlayer/audiobook/build/intermediates/exploded-aar/com.github.JakeWharton.RxBinding/rxbinding/542cd7e8a4/aidl -I/Users/beust/t/MaterialAudiobookPlayer/audiobook/build/intermediates/exploded-aar/io.reactivex/rxandroid/1.1.0/aidl -I/Users/beust/t/MaterialAudiobookPlayer/audiobook/build/intermediates/exploded-aar/com.squareup.leakcanary/leakcanary-android/1.4-beta1/aidl -d/var/folders/77/kjr_lq4x5tj5ymxdfvxs6c7c002p8z/T/aidl768872507241036042.d /Users/beust/t/MaterialAudiobookPlayer/audiobook/src/main/aidl/com/android/vending/billing/IInAppBillingService.aidl
+         */
+        override fun compile(project: Project, context: KobaltContext, info: CompilerActionInfo): TaskResult {
+            val version = configurationFor(project)?.compileSdkVersion
+            val pArg = "-p" + androidHome(project) + "/platforms/android-$version/framework.aidl"
+            val oArg = "-o" + AndroidFiles.generatedSource(project, context)
+            val exp = explodedAarDirectories(project).map { it.second }
+            val included = exp.map {
+                "-I" + KFiles.joinDir(it.path, "aidl")
+            }
+            val success = runCommand {
+                command = aidl(project)
+                args = listOf(pArg) + listOf(oArg) + included + info.sourceFiles
+                directory = if (info.directory == "") File(".") else File(info.directory)
+
+            }
+            return TaskResult(if (success == 0) true else false)
+        }
+    }
+
+    override fun compilersFor(project: Project, context: KobaltContext): List<ICompiler> = listOf(idlCompiler)
+
     companion object {
         const val PLUGIN_NAME = "Android"
         const val TASK_GENERATE_DEX = "generateDex"
@@ -50,8 +79,6 @@ public class AndroidPlugin @Inject constructor(val dependencyManager: Dependency
     }
 
     override val name = PLUGIN_NAME
-
-    fun projects(project: Project) = project.projectProperties.get("dependentProjects") as List<ProjectDescription>
 
     fun isAndroid(project: Project) = configurationFor(project) != null
 
@@ -75,7 +102,7 @@ public class AndroidPlugin @Inject constructor(val dependencyManager: Dependency
                     runAfter = listOf("compile"),
                     runTask = { taskProguard(project) })
         }
-        context.pluginInfo.classpathContributors.add(this)
+//        context.pluginInfo.classpathContributors.add(this)
     }
 
 
@@ -96,7 +123,12 @@ public class AndroidPlugin @Inject constructor(val dependencyManager: Dependency
     fun androidJar(project: Project): Path =
             Paths.get(androidHome(project), "platforms", "android-${compileSdkVersion(project)}", "android.jar")
 
-    private fun aapt(project: Project) = "${androidHome(project)}/build-tools/${buildToolsVersion(project)}/aapt"
+    private fun buildToolCommand(project: Project, command: String)
+        = "${androidHome(project)}/build-tools/${buildToolsVersion(project)}/$command"
+
+    private fun aapt(project: Project) = buildToolCommand(project, "aapt")
+
+    private fun aidl(project: Project) = buildToolCommand(project, "aidl")
 
     private fun adb(project: Project) = "${androidHome(project)}/platform-tools/adb"
 
@@ -111,7 +143,10 @@ public class AndroidPlugin @Inject constructor(val dependencyManager: Dependency
         val aarDependencies = explodeAarFiles(project)
         preDexFiles.addAll(preDex(project, context.variant, aarDependencies))
         val rDirectory = KFiles.joinAndMakeDir(KFiles.generatedSourceDir(project, context.variant, "r"))
+        // Where R.java gets generated
         extraSourceDirectories.add(File(rDirectory))
+        // Where aidl Java files get generated
+        extraSourceDirectories.add(File(AndroidFiles.generatedSource(project, context)))
         KobaltResourceMerger().run(project, context.variant, configurationFor(project)!!, aarDependencies, rDirectory)
 
         return TaskResult(true)
@@ -160,6 +195,16 @@ public class AndroidPlugin @Inject constructor(val dependencyManager: Dependency
                 successCallback = { l: List<String> -> })
     }
 
+    private fun explodedAarDirectories(project: Project) : List<Pair<IClasspathDependency, File>> {
+        val result = dependencyManager.calculateTransitiveDependencies(project, context).filter {
+            it.jarFile.get().name.endsWith(".aar")
+        }.map {
+            val mavenId = MavenId.create(it.id)
+            Pair(it, File(AndroidFiles.exploded(project, mavenId)))
+        }
+        return result
+    }
+
     /**
      * Extract all the .aar files found in the dependencies and add their android.jar to classpathEntries,
      * which will be added to the classpath at compile time via the classpath interceptor.
@@ -167,14 +212,12 @@ public class AndroidPlugin @Inject constructor(val dependencyManager: Dependency
     private fun explodeAarFiles(project: Project) : List<File> {
         log(2, "Exploding aars")
         val result = arrayListOf<File>()
-        dependencyManager.calculateTransitiveDependencies(project, context).filter {
-            it.jarFile.get().name.endsWith(".aar")
-        }.forEach {
-            val mavenId = MavenId.create(it.id)
-            val destDir = File(AndroidFiles.exploded(project, mavenId))
+        explodedAarDirectories(project).forEach { pair ->
+            val (dep, destDir) = pair
+            val mavenId = MavenId.create(dep.id)
             if (!File(AndroidFiles.explodedManifest(project, mavenId)).exists()) {
-                log(2, "  Exploding ${it.jarFile.get()} to $destDir")
-                JarUtils.extractJarFile(it.jarFile.get(), destDir)
+                log(2, "  Exploding ${dep.jarFile.get()} to $destDir")
+                JarUtils.extractJarFile(dep.jarFile.get(), destDir)
             } else {
                 log(2, "  $destDir already exists, not extracting again")
             }
@@ -236,7 +279,7 @@ public class AndroidPlugin @Inject constructor(val dependencyManager: Dependency
 
     private fun dependencies(project: Project) = dependencyManager.calculateDependencies(project,
             context,
-            projects(project),
+            project.dependentProjects,
             allDependencies = project.compileDependencies).map {
             it.jarFile.get().path
         }.filterNot {
@@ -462,7 +505,7 @@ public class AndroidPlugin @Inject constructor(val dependencyManager: Dependency
             mavenId
         }
 
-    private val extraSourceDirectories = arrayListOf<File>()
+    private val extraSourceDirectories = arrayListOf(File("src/main/aidl"))
 
     // ISourceDirectoryContributor
     override fun sourceDirectoriesFor(project: Project, context: KobaltContext): List<File> = extraSourceDirectories

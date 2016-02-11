@@ -5,8 +5,8 @@ import com.beust.kobalt.misc.RunCommand
 import com.beust.kobalt.misc.log
 import java.io.File
 
-open class AndroidCommand(project: Project, androidHome: String, command: String, cwd: File = File(project.directory))
-: RunCommand(command) {
+open class AndroidCommand(project: Project, androidHome: String,
+        command: String, cwd: File = File(project.directory)) : RunCommand(command) {
     init {
         env.put("ANDROID_HOME", androidHome)
         directory = cwd
