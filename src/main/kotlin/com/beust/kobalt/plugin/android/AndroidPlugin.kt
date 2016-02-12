@@ -335,12 +335,12 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
         // Because aapt doesn't handle directory moving, we need to cd to classes.dex's directory so
         // that classes.dex ends up in the root directory of the .ap_.
         //
-        AaptCommand(project, aapt(project), "add").apply {
+        val result = AaptCommand(project, aapt(project), "add").apply {
             directory = File(outClassesDex).parentFile
         }.call(listOf("-v", KFiles.joinDir(
                 File(AndroidFiles.temporaryApk(project, context.variant.shortArchiveName)).absolutePath), classesDex))
 
-        return TaskResult()
+        return TaskResult(result == 0)
     }
 
     private val DEFAULT_DEBUG_SIGNING_CONFIG = SigningConfig(
