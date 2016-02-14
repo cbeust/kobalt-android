@@ -18,11 +18,11 @@ class Archetypes : IInitContributor {
 
     class Archetype: IArchetype {
         override val archetypeName = "android-java"
-        override val archetypeDescription = "A simple Android Java project"
+        override val archetypeDescription = "Generate a simple Android Java project"
         override val pluginName = AndroidPlugin.PLUGIN_NAME
 
         companion object {
-            val JAR_FILE = "android-basic-project.jar"
+            val JAR_FILE = "android-java-archetype.jar"
 
             fun extractFile(ins: JarInputStream, destDir: File) {
                 var entry = ins.nextEntry
@@ -48,10 +48,10 @@ class Archetypes : IInitContributor {
             }
         }
 
-        override fun generateArchetype(args: Args) {
+        override fun generateArchetype(args: Args, classLoader: ClassLoader) {
             log(1, "Generating archetype for Android")
             val destDir = File(".")
-            val ins = JarInputStream(javaClass.classLoader.getResource(JAR_FILE).openConnection().inputStream)
+            val ins = JarInputStream(classLoader.getResource(JAR_FILE).openConnection().inputStream)
             extractFile(ins, destDir)
         }
     }
