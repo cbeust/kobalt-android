@@ -168,7 +168,7 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
         allDependencies.forEach { dep ->
             val versionFile = File(dep.path).parentFile
             val artifactFile = versionFile.parentFile
-            val name = artifactFile.name + "-" + versionFile.name
+            val name = (if (artifactFile != null) artifactFile.name else "") + "-" + versionFile.name
             val outputDir = AndroidFiles.preDexed(project, variant)
             val outputFile = File(outputDir, name + ".jar")
             if (! outputFile.exists()) {
