@@ -248,7 +248,7 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
      */
     override fun flagsFor(project: Project, context: KobaltContext, currentFlags: List<String>,
             suffixesBeingCompiled: List<String>) : List<String> {
-        if (isAndroid(project) && suffixesBeingCompiled.contains(".java")) {
+        if (isAndroid(project) && suffixesBeingCompiled.contains("java")) {
             var found = currentFlags.any { it == "-source" || it == "-target" }
             val result = arrayListOf<String>().apply { addAll(currentFlags) }
             if (! found) {
