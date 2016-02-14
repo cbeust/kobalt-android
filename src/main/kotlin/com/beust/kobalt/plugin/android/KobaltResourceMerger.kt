@@ -264,10 +264,9 @@ class KobaltResourceMerger {
             val variantDir = variant.toIntermediateDir()
             val generated = KFiles.joinAndMakeDir(project.directory, project.buildDirectory, "symbols")
             with(aaptCommand) {
-                setSourceOutputDir(rDirectory)
+                sourceOutputDir = rDirectory
                 val libraries = aarDependencies.map { toSymbolFileProvider(it) }
                 setLibraries(libraries)
-                val r = libraries[0].symbolFile
                 setResFolder(File(AndroidFiles.mergedResources(project, variant)))
                 setAssetsFolder(File(KFiles.joinAndMakeDir(AndroidFiles.intermediates(project), "assets", variantDir)))
                 aaptCommand.setResPackageOutput(AndroidFiles.temporaryApk(project, variant.shortArchiveName))
