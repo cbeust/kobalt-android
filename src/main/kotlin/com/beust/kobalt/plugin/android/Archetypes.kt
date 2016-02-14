@@ -49,7 +49,7 @@ class Archetypes : IInitContributor {
         }
 
         override fun generateArchetype(args: Args, classLoader: ClassLoader) {
-            log(1, "Generating archetype for Android")
+            log(1, "Generating archetype for Android with class loader $classLoader")
             val destDir = File(".")
             val ins = JarInputStream(classLoader.getResource(JAR_FILE).openConnection().inputStream)
             extractFile(ins, destDir)
