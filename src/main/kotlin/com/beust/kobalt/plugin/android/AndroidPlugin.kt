@@ -173,11 +173,14 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
             val outputFile = File(outputDir, name + ".jar")
             if (! outputFile.exists()) {
                 log(2, "  Predexing $dep")
-                runDex(project, outputFile.path, dep.path)
+                if (runDex(project, outputFile.path, dep.path)) {
+                    result.add(outputFile.path)
+                } else {
+                    log(2, "Dex command failed")
+                }
             } else {
                 log(2, "  $dep already predexed")
             }
-            result.add(outputFile.path)
         }
         return result
     }
@@ -296,9 +299,12 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
 
     private fun inputChecksum(classDirectory: String) = Md5.toMd5Directories(listOf(File(classDirectory)))
 
-    private fun runDex(project: Project, outputJarFile: String, target: String) {
+    /**
+     * @return true if dex succeeded
+     */
+    private fun runDex(project: Project, outputJarFile: String, target: String) : Boolean {
 //        DexProcessBuilder(File(jarFile)).
-        DexCommand().run(listOf(
+        val result = DexCommand().run(listOf(
                 "-cp", KFiles.joinDir(androidHome(project), "build-tools", buildToolsVersion(project), "lib", "dx.jar"),
                 "com.android.dx.command.Main",
                 "--dex",
@@ -308,6 +314,7 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
                 *(preDexFiles.toTypedArray()),
                 target
         ).filter { it != "" })
+        return result == 0
     }
 
     @IncrementalTask(name = TASK_GENERATE_DEX, description = "Generate the dex file", runBefore = arrayOf("assemble"),
