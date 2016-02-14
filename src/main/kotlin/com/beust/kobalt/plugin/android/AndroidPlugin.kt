@@ -45,12 +45,7 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
                 ICompilerContributor, IInitContributor {
 
     // IInitContributor
-    override val archetypeName = "android"
-
-    override fun generateArchetype(args: Args) {
-        log(1, "Generating archetype for Android")
-        Archetype().run()
-    }
+    override val archetypes = Archetypes().archetypes
 
     private val idlCompiler = object: ICompiler {
         override val sourceSuffixes: List<String>
