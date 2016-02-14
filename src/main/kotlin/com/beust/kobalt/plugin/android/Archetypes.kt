@@ -30,6 +30,7 @@ class Archetypes : IInitContributor {
                     val f = File(destDir.path + File.separator + entry.name)
                     if (entry.isDirectory) {
                         f.mkdir()
+                        entry = ins.nextEntry
                         continue
                     }
 
