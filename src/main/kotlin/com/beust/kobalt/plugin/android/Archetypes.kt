@@ -3,10 +3,8 @@ package com.beust.kobalt.plugin.android
 import com.beust.kobalt.Args
 import com.beust.kobalt.api.IArchetype
 import com.beust.kobalt.api.IInitContributor
-import com.beust.kobalt.homeDir
 import com.beust.kobalt.misc.log
 import java.io.File
-import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.util.jar.JarInputStream
 
@@ -14,16 +12,19 @@ import java.util.jar.JarInputStream
  * Run the Android archetype.
  */
 class Archetypes : IInitContributor {
-    override val archetypes = arrayListOf(Archetype())
+    class ArchetypeInfo(val name: String, val description: String, val jarFile: String)
 
-    class Archetype: IArchetype {
-        override val archetypeName = "android-java"
-        override val archetypeDescription = "Generate a simple Android Java project"
+    override val archetypes = listOf(
+            Archetype(ArchetypeInfo("android-java",
+                    "Generate a simple Android Java project",
+                    "android-java-archetype.jar")))
+
+    class Archetype(val info: ArchetypeInfo) : IArchetype {
+        override val archetypeName = info.name
+        override val archetypeDescription = info.description
         override val pluginName = AndroidPlugin.PLUGIN_NAME
 
         companion object {
-            val JAR_FILE = "android-java-archetype.jar"
-
             fun extractFile(ins: JarInputStream, destDir: File) {
                 var entry = ins.nextEntry
                 while (entry != null) {
@@ -52,14 +53,14 @@ class Archetypes : IInitContributor {
         override fun generateArchetype(args: Args, classLoader: ClassLoader) {
             log(1, "Generating archetype for Android with class loader $classLoader")
             val destDir = File(".")
-            val ins = JarInputStream(classLoader.getResource(JAR_FILE).openConnection().inputStream)
+            val ins = JarInputStream(classLoader.getResource(info.jarFile).openConnection().inputStream)
             extractFile(ins, destDir)
         }
     }
 }
 
-fun main(argv: Array<String>) {
-    val jarFile = homeDir("kotlin", "kobalt-android", "src", "main", "resources",
-            Archetypes.Archetype.JAR_FILE)
-    Archetypes.Archetype.extractFile(JarInputStream(FileInputStream(jarFile)), File("."))
-}
+//fun main(argv: Array<String>) {
+//    val jarFile = homeDir("kotlin", "kobalt-android", "src", "main", "resources",
+//            Archetypes.Archetype.JAR_FILE)
+//    Archetypes.Archetype.extractFile(JarInputStream(FileInputStream(jarFile)), File("."))
+//}
