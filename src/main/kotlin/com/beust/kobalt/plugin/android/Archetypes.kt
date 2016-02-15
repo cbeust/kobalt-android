@@ -37,8 +37,10 @@ class Archetypes : IInitContributor {
 
                     log(1, "Extracting: $entry to ${f.absolutePath}")
                     FileOutputStream(f).use { fos ->
-                        while (ins.available() > 0) {
-                            fos.write(ins.read())
+                        var read = ins.read()
+                        while (ins.available() > 0 && read != -1) {
+                            fos.write(read)
+                            read = ins.read()
                         }
                     }
                     entry = ins.nextEntry
