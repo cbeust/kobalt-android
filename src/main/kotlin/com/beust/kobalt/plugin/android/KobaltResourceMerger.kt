@@ -217,7 +217,7 @@ class KobaltResourceMerger {
                     .map { "src" + File.separator + it }
 
             // TODO: figure out why the badSrcList is bad. All this information should be coming from the Variant
-            val badSrcList = variant.resDirectories(project).map { it.path }
+            val badSrcList = variant.resourceDirectories(project).map { it.path }
             val goodAarList = aarDependencies.map { it.path + File.separator }
             (goodAarList + srcList).map { it + File.separator + "res" }.forEach { path ->
                 with(ResourceSet(path)) {
