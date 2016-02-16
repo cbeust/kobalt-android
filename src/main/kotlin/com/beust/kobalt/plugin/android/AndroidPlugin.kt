@@ -305,17 +305,28 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
      */
     private fun runDex(project: Project, outputJarFile: String, target: String) : Boolean {
 //        DexProcessBuilder(File(jarFile)).
-        val result = DexCommand().run(listOf(
+        val args = arrayListOf(
                 "-cp", KFiles.joinDir(androidHome(project), "build-tools", buildToolsVersion(project), "lib", "dx.jar"),
                 "com.android.dx.command.Main",
                 "--dex",
-                if (KobaltLogger.LOG_LEVEL == 3) "--verbose" else "",
                 "--num-threads=4",
-                "--output", outputJarFile,
-                *(preDexFiles.toTypedArray()),
-                target
-        ).filter { it != "" })
-        return result == 0
+                "--output", outputJarFile)
+        if (KobaltLogger.LOG_LEVEL == 3) {
+            args.add("--verbose")
+        }
+        var hasFiles = false
+        if (preDexFiles.size > 0) {
+            args.addAll(preDexFiles.filter { File(it).exists() })
+            hasFiles = true
+        }
+        val classFiles = KFiles.findRecursively(File(target), { f -> f.endsWith(".class")})
+        if (classFiles.size > 0) {
+            args.add(target)
+            hasFiles = true
+        }
+
+        val exitCode = if (hasFiles) DexCommand().run(args) else 0
+        return exitCode == 0
     }
 
     @IncrementalTask(name = TASK_GENERATE_DEX, description = "Generate the dex file", runBefore = arrayOf("assemble"),
