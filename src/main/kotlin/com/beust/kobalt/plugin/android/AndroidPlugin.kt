@@ -376,7 +376,7 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
         var signingConfig = config!!.signingConfigs[buildType]
 
         if (signingConfig == null && buildType != "debug") {
-            warn("No signingConfig found for product type \"$buildType\", using the \"debug\" signConfig")
+            log(2, "Warning: No signingConfig found for product type \"$buildType\", using the \"debug\" signConfig")
         }
 
         signingConfig = DEFAULT_DEBUG_SIGNING_CONFIG
