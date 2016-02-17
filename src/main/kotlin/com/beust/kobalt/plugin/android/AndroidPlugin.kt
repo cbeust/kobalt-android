@@ -543,7 +543,7 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
     override fun tasksFor(context: KobaltContext): List<DynamicTask> = taskContributor.dynamicTasks
 
     // ITemplateContributor
-    override val templates = Archetypes().templates
+    override val templates = Templates().templates
 }
 
 class DefaultConfig(var minSdkVersion: Int? = 22,

@@ -4,15 +4,14 @@ import com.beust.kobalt.api.ITemplateContributor
 import com.beust.kobalt.api.JarTemplate
 
 /**
- * Run the Android archetype.
+ * Run the Android template.
  */
-class Archetypes : ITemplateContributor {
-    class TemplateInfo(val name: String, val description: String, val jarFile: String)
+class Templates : ITemplateContributor {
+    class TemplateInfo(val name: String, val description: String)
 
     override val templates = listOf(
             Template(TemplateInfo("android-java",
-                    "Generate a simple Android Java project",
-                    "android-java-archetype.jar")))
+                    "Generate a simple Android Java project")))
 
     class Template(val info: TemplateInfo) : JarTemplate("templates/androidJavaTemplate.jar") {
         override val templateName = info.name
