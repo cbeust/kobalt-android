@@ -42,10 +42,7 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
             : ConfigPlugin<AndroidConfig>(), IClasspathContributor, IRepoContributor, ICompilerFlagContributor,
                 ICompilerInterceptor, IBuildDirectoryIncerceptor, IRunnerContributor, IClasspathInterceptor,
                 ISourceDirectoryContributor, IBuildConfigFieldContributor, ITaskContributor, IMavenIdInterceptor,
-                ICompilerContributor, IInitContributor {
-
-    // IInitContributor
-    override val archetypes = Archetypes().archetypes
+                ICompilerContributor, ITemplateContributor {
 
     private val idlCompiler = object: ICompiler {
         override val sourceSuffixes: List<String>
@@ -544,6 +541,9 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
 
     //ITaskContributor
     override fun tasksFor(context: KobaltContext): List<DynamicTask> = taskContributor.dynamicTasks
+
+    // ITemplateContributor
+    override val templates = Archetypes().templates
 }
 
 class DefaultConfig(var minSdkVersion: Int? = 22,
