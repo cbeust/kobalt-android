@@ -316,8 +316,13 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
             args.addAll(preDexFiles.filter { File(it).exists() })
             hasFiles = true
         }
-        val classFiles = KFiles.findRecursively(File(target), { f -> f.endsWith(".class")})
-        if (classFiles.size > 0) {
+        if (File(target).isDirectory) {
+            val classFiles = KFiles.findRecursively(File(target), { f -> f.endsWith(".class") })
+            if (classFiles.size > 0) {
+                args.add(target)
+                hasFiles = true
+            }
+        } else {
             args.add(target)
             hasFiles = true
         }
