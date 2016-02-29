@@ -173,11 +173,11 @@ class KobaltResourceMerger {
 
     private fun processManifests(project: Project, variant: Variant, androidBuilder: AndroidBuilder,
             config: AndroidConfig): AppInfo {
-        val mainManifest = File("src/main/AndroidManifest.xml")
+        val mainManifest = File(project.directory, "src/main/AndroidManifest.xml")
         val appInfo = AppInfo(mainManifest, config)
         logWrap(2, "  Processing manifests...", "done") {
             val manifestOverlays = variant.allDirectories(project).map {
-                File("src/$it/AndroidManifest.xml")
+                File(project.directory, "src/$it/AndroidManifest.xml")
             }.filter {
                 it.exists()
             }

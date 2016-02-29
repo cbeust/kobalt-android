@@ -18,6 +18,7 @@ import java.io.File
 import java.io.FileInputStream
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.util.*
 
 /**
  * The Android plug-in which executes:
@@ -39,10 +40,12 @@ import java.nio.file.Paths
 @Singleton
 class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager,
         val taskContributor : TaskContributor)
-            : ConfigPlugin<AndroidConfig>(), IClasspathContributor, IRepoContributor, ICompilerFlagContributor,
+            : IConfigActor<AndroidConfig>, IClasspathContributor, IRepoContributor, ICompilerFlagContributor,
                 ICompilerInterceptor, IBuildDirectoryIncerceptor, IRunnerContributor, IClasspathInterceptor,
                 ISourceDirectoryContributor, IBuildConfigFieldContributor, ITaskContributor, IMavenIdInterceptor,
-                ICompilerContributor, ITemplateContributor {
+                ICompilerContributor, ITemplateContributor, BasePlugin() {
+
+    override val configurations : HashMap<String, AndroidConfig> = hashMapOf()
 
     private val idlCompiler = object: ICompiler {
         override val sourceSuffixes: List<String>
