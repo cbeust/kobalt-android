@@ -355,7 +355,7 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
         val classesDex = "classes.dex"
         val outClassesDex = KFiles.joinDir(classesDexDir, classesDex)
 
-        runDex(project, outClassesDex, project.classesDir(context))
+        runDex(project, outClassesDex, KFiles.joinDir(project.directory, project.classesDir(context)))
 
         //
         // Add classes.dex to existing .ap_
@@ -460,22 +460,20 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
     }
 
     // IBuildDirectoryInterceptor
-    override fun intercept(project: Project, context: KobaltContext, buildDirectory: String): String {
-        if (isAndroid(project)) {
-            val result = AndroidFiles.intermediatesClasses(project, context)
-            return result
+    override fun intercept(project: Project, context: KobaltContext, buildDirectory: String)
+        = if (isAndroid(project)) {
+            AndroidFiles.buildDirectory(project)
         } else {
-            return buildDirectory
+            buildDirectory
         }
-    }
 
     // ICompilerInterceptor
     override fun intercept(project: Project, context: KobaltContext, actionInfo: CompilerActionInfo)
             : CompilerActionInfo {
         val result: CompilerActionInfo =
             if (isAndroid(project)) {
-                val newOutputDir = AndroidFiles.intermediatesClasses(project, context)
-                actionInfo.copy(outputDir = File(newOutputDir))
+                val newBuildDir = AndroidFiles.buildDirectory(project)
+                actionInfo.copy(outputDir = File(newBuildDir))
             } else {
                 actionInfo
             }

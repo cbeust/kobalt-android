@@ -5,11 +5,18 @@ import com.beust.kobalt.api.KobaltContext
 import com.beust.kobalt.api.Project
 import com.beust.kobalt.maven.MavenId
 import com.beust.kobalt.misc.KFiles
+import java.io.File
 
 class AndroidFiles {
     companion object {
-        fun intermediates(project: Project) = KFiles.joinDir(project.directory, project.buildDirectory,
-                "intermediates")
+        /**
+         * The build directory is returned by the build directory interceptor so it should not containt
+         * the project directory (which will be added separately by Kobalt when creating the CompilerActionInfo object
+         */
+        fun buildDirectory(project: Project) = KFiles.joinDir(project.buildDirectory, "intermediates")
+
+        fun intermediates(project: Project) = KFiles.joinDir(project.directory) + File.separatorChar +
+                buildDirectory(project)
 
         fun manifest(project: Project) =
                 KFiles.joinDir(project.directory, "src", "main", "AndroidManifest.xml")
