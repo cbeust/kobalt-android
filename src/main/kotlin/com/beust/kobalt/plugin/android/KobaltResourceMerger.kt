@@ -28,6 +28,7 @@ import com.beust.kobalt.misc.KobaltLogger
 import com.beust.kobalt.misc.log
 import com.beust.kobalt.misc.logWrap
 import java.io.File
+import java.nio.file.Paths
 import java.util.*
 
 class KobaltProcessResult : ProcessResult {
@@ -74,8 +75,8 @@ class ProjectLayout {
 }
 
 class KobaltResourceMerger {
-    fun run(project: Project, variant: Variant, config: AndroidConfig, aarDependencies: List<File>,
-            rDirectory: String) {
+    fun run(project: Project, variant: Variant, config: AndroidConfig, aarDependencies: List<File>) : List<String> {
+        val result = arrayListOf<String>()
         val level = when(KobaltLogger.LOG_LEVEL) {
             3 -> StdLogger.Level.VERBOSE
             2 -> StdLogger.Level.WARNING
@@ -101,8 +102,9 @@ class KobaltResourceMerger {
         //
         KobaltProcessOutputHandler().let {
             processResources(project, variant, androidBuilder, aarDependencies, logger, it, appInfo.minSdkVersion)
-            mergeResources(project, variant, androidBuilder, aarDependencies, rDirectory, it)
+            result.addAll(mergeResources(project, variant, androidBuilder, aarDependencies, it))
         }
+        return result
     }
 
     private fun createAndroidBuilder(project: Project, config: AndroidConfig, logger: ILogger): AndroidBuilder {
@@ -213,10 +215,11 @@ class KobaltResourceMerger {
             val outputDir = AndroidFiles.mergedResources(project, variant)
             val resourceMerger = ResourceMerger(minSdk)
             val fullVariantDir = File(variant.toCamelcaseDir())
-            val srcList = listOf("main", variant.productFlavor.name, variant.buildType.name, fullVariantDir.path)
-                    .map { "src" + File.separator + it }
+            val srcList = setOf("main", variant.productFlavor.name, variant.buildType.name, fullVariantDir.path)
+                    .map { project.directory + File.separator + "src" + File.separator + it }
 
             // TODO: figure out why the badSrcList is bad. All this information should be coming from the Variant
+            // Figured it out: using hardcoded "resources" instead of "res"
             val badSrcList = variant.resourceDirectories(project).map { it.path }
             val goodAarList = aarDependencies.map { it.path + File.separator }
             (goodAarList + srcList).map { it + File.separator + "res" }.forEach { path ->
@@ -240,9 +243,12 @@ class KobaltResourceMerger {
         }
     }
 
+    /**
+     * @return the extra source directories
+     */
     private fun mergeResources(project: Project, variant: Variant, androidBuilder: AndroidBuilder,
-            aarDependencies: List<File>, rDirectory: String,
-            processOutputHandler: KobaltProcessOutputHandler) {
+            aarDependencies: List<File>, processOutputHandler: KobaltProcessOutputHandler) : List<String> {
+        val result = arrayListOf<String>()
         logWrap(2, "  Merging resources...", "done") {
 
             val aaptOptions = object : AaptOptions {
@@ -263,9 +269,14 @@ class KobaltResourceMerger {
 
             val variantDir = variant.toIntermediateDir()
             val generated = KFiles.joinAndMakeDir(project.directory, project.buildDirectory, "symbols")
+
+            val rDirectory = KFiles.joinAndMakeDir(KFiles.generatedSourceDir(project, variant, "r"))
+            result.add(Paths.get(project.directory).relativize(Paths.get(rDirectory)).toString())
+
             with(aaptCommand) {
                 sourceOutputDir = rDirectory
                 val libraries = aarDependencies.map { toSymbolFileProvider(it) }
+                // TODO: setType for libraries
                 setLibraries(libraries)
                 setResFolder(File(AndroidFiles.mergedResources(project, variant)))
                 setAssetsFolder(File(KFiles.joinAndMakeDir(AndroidFiles.intermediates(project), "assets", variantDir)))
@@ -281,6 +292,7 @@ class KobaltResourceMerger {
 
             androidBuilder.processResources(aaptCommand, true, processOutputHandler)
         }
+        return result
     }
 
     fun dex(project: Project) {

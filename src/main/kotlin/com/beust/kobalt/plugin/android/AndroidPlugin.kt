@@ -146,12 +146,9 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
 
         val aarDependencies = explodeAarFiles(project)
         preDexFiles.addAll(preDex(project, context.variant, aarDependencies))
-        val rDirectory = KFiles.joinAndMakeDir(KFiles.generatedSourceDir(project, context.variant, "r"))
-        // Where R.java gets generated
-        extraSourceDirectories.add(File(rDirectory))
-        // Where aidl Java files get generated
-        extraSourceDirectories.add(File(AndroidFiles.generatedSource(project, context)))
-        KobaltResourceMerger().run(project, context.variant, configurationFor(project)!!, aarDependencies, rDirectory)
+        val extraSourceDirs =
+            KobaltResourceMerger().run(project, context.variant, configurationFor(project)!!, aarDependencies)
+        extraSourceDirectories.addAll(extraSourceDirs.map { File(it) })
 
         return TaskResult(true)
     }
@@ -175,7 +172,7 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
             if (! outputFile.exists()) {
                 log(2, "  Predexing $dep")
                 if (runDex(project, outputFile.path, dep.path)) {
-                    result.add(outputFile.path)
+                    if (outputFile.exists()) result.add(outputFile.path)
                 } else {
                     log(2, "Dex command failed")
                 }
@@ -346,28 +343,46 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
     }
 
     fun doTaskGenerateDex(project: Project): TaskResult {
-        //
-        // Call dx to generate classes.dex
-        //
-        val classesDexDir = KFiles.joinDir(AndroidFiles.intermediates(project), "dex",
-                context.variant.toIntermediateDir())
-        File(classesDexDir).mkdirs()
-        val classesDex = "classes.dex"
-        val outClassesDex = KFiles.joinDir(classesDexDir, classesDex)
+        val config = configurationFor(project)
+        val runDex = if (config != null) {
+                ! config.isAar &&! config.isJar
+            } else {
+                true
+            }
+        if (runDex) {
+            //
+            // Call dx to generate classes.dex
+            //
+            val classesDexDir = KFiles.joinDir(AndroidFiles.intermediates(project), "dex",
+                    context.variant.toIntermediateDir())
+            File(classesDexDir).mkdirs()
+            val classesDex = "classes.dex"
+            val outClassesDex = KFiles.joinDir(classesDexDir, classesDex)
 
-        runDex(project, outClassesDex, KFiles.joinDir(project.directory, project.classesDir(context)))
+            val dexSuccess =
+                    runDex(project, outClassesDex, KFiles.joinDir(project.directory, project.classesDir (context)))
 
-        //
-        // Add classes.dex to existing .ap_
-        // Because aapt doesn't handle directory moving, we need to cd to classes.dex's directory so
-        // that classes.dex ends up in the root directory of the .ap_.
-        //
-        val result = AaptCommand(project, aapt(project), "add").apply {
-            directory = File(outClassesDex).parentFile
-        }.call(listOf("-v", KFiles.joinDir(
-                File(AndroidFiles.temporaryApk(project, context.variant.shortArchiveName)).absolutePath), classesDex))
+            val aaptSuccess =
+                if (dexSuccess) {
+                    //
+                    // Add classes.dex to existing .ap_
+                    // Because aapt doesn't handle directory moving, we need to cd to classes.dex's directory so
+                    // that classes.dex ends up in the root directory of the .ap_.
+                    //
+                    val aaptExitCode = AaptCommand(project, aapt(project), "add").apply {
+                        directory = File(outClassesDex).parentFile
+                    }.call(listOf("-v", KFiles.joinDir(
+                        File(AndroidFiles.temporaryApk(project, context.variant.shortArchiveName)).absolutePath),
+                                classesDex))
+                    aaptExitCode == 0
+                } else {
+                    false
+                }
 
-        return TaskResult(result == 0)
+            return TaskResult(dexSuccess && aaptSuccess)
+        } else {
+            return TaskResult()
+        }
     }
 
     private val DEFAULT_DEBUG_SIGNING_CONFIG = SigningConfig(
@@ -462,7 +477,9 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
     // IBuildDirectoryInterceptor
     override fun intercept(project: Project, context: KobaltContext, buildDirectory: String)
         = if (isAndroid(project)) {
-            AndroidFiles.buildDirectory(project)
+            val c = AndroidFiles.intermediatesClasses(project, context)
+            val result = Paths.get(project.directory).relativize(Paths.get(c))
+            result.toString()
         } else {
             buildDirectory
         }
@@ -530,6 +547,9 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
             mavenId
         }
 
+    /**
+     * The extra source directories (without the project directory, which will be added by Kobalt).
+     */
     private val extraSourceDirectories = arrayListOf(File("src/main/aidl"))
 
     // ISourceDirectoryContributor
