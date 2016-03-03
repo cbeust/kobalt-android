@@ -575,7 +575,7 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
 class DefaultConfig(var minSdkVersion: Int? = 22,
         var maxSdkVersion: String? = null,
         var targetSdkVersion: String? = null,
-        var versionCode: Int? = null,
+        var versionCode: Int? = 1,
         var versionName: String? = null) {
     var buildConfig : BuildConfig? = BuildConfig()
 }
