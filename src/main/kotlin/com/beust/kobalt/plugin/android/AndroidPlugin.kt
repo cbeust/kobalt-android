@@ -39,11 +39,11 @@ import java.util.*
  */
 @Singleton
 class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager,
-        val taskContributor : TaskContributor)
-            : IConfigActor<AndroidConfig>, IClasspathContributor, IRepoContributor, ICompilerFlagContributor,
-                ICompilerInterceptor, IBuildDirectoryIncerceptor, IRunnerContributor, IClasspathInterceptor,
-                ISourceDirectoryContributor, IBuildConfigFieldContributor, ITaskContributor, IMavenIdInterceptor,
-                ICompilerContributor, ITemplateContributor, BasePlugin() {
+        val taskContributor : TaskContributor, val aarGenerator: AarGenerator)
+            : BasePlugin(), IConfigActor<AndroidConfig>, IClasspathContributor, IRepoContributor,
+                ICompilerFlagContributor, ICompilerInterceptor, IBuildDirectoryIncerceptor, IRunnerContributor,
+                IClasspathInterceptor, ISourceDirectoryContributor, IBuildConfigFieldContributor, ITaskContributor,
+                IMavenIdInterceptor, ICompilerContributor, ITemplateContributor, IAssemblyContributor {
 
     override val configurations : HashMap<String, AndroidConfig> = hashMapOf()
 
@@ -343,12 +343,8 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
     }
 
     fun doTaskGenerateDex(project: Project): TaskResult {
-        val config = configurationFor(project)
-        val runDex = if (config != null) {
-                ! config.isAar &&! config.isJar
-            } else {
-                true
-            }
+        // Don't run dex if we're producting an aar
+        val runDex = aars[project.name] == null
         if (runDex) {
             //
             // Call dx to generate classes.dex
@@ -570,6 +566,21 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
 
     // ITemplateContributor
     override val templates = Templates().templates
+
+    // IAssemblyContributor
+    override fun assemble(project: Project, context: KobaltContext) : TaskResult {
+        val pair = aars[project.name]
+        if (pair != null) {
+            aarGenerator.generate(project, context, pair.second)
+        }
+        return TaskResult()
+    }
+
+    val aars = hashMapOf<String, Pair<Project, AarConfig>>()
+
+    fun addAar(project: Project, aarConfig: AarConfig) {
+        aars[project.name] = Pair(project, aarConfig)
+    }
 }
 
 class DefaultConfig(var minSdkVersion: Int? = 22,
@@ -609,6 +620,17 @@ fun AndroidConfig.signingConfig(name: String, init: SigningConfig.() -> Unit) : 
     }
 }
 
-//fun main(argv: Array<String>) {
-//    com.beust.kobalt.main(argv)
-//}
+class AarConfig{var name: String? = null}
+
+/**
+ * Create an aar file.
+ */
+@Directive
+fun AndroidConfig.aar(init: AarConfig.() -> Unit) {
+    val aarConfig = AarConfig().apply { init() }
+    (Kobalt.findPlugin(AndroidPlugin.PLUGIN_NAME) as AndroidPlugin).addAar(project, aarConfig)
+}
+
+fun main(argv: Array<String>) {
+    com.beust.kobalt.main(argv)
+}

@@ -12,7 +12,7 @@ val r = repos("https://dl.bintray.com/cbeust/maven")
 //val pl = plugins(file(homeDir("kotlin/kobalt-retrolambda/kobaltBuild/libs/kobalt-retrolambda-0.3.jar")))
 
 val dev = false
-val version = 643
+val version = 647
 val KOBALT_VERSION = "0.$version"
 val KOBALT_DEV = file(homeDir("kotlin/kobalt/kobaltBuild/libs/kobalt-0.${version + 1}.jar"))
 

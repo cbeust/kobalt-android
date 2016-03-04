@@ -13,10 +13,12 @@ class AndroidFiles {
          * The build directory is returned by the build directory interceptor so it should not containt
          * the project directory (which will be added separately by Kobalt when creating the CompilerActionInfo object
          */
-        fun buildDirectory(project: Project) = KFiles.joinDir(project.buildDirectory, "intermediates")
+        fun buildDirectory(project: Project) = KFiles.joinDir(project.buildDirectory, "intermediates", "classes")
 
         fun intermediates(project: Project) = KFiles.joinDir(project.directory) + File.separatorChar +
                 buildDirectory(project)
+
+        fun assets(project: Project) = KFiles.joinDir(intermediates(project), "assets")
 
         fun manifest(project: Project) =
                 KFiles.joinDir(project.directory, "src", "main", "AndroidManifest.xml")
@@ -48,6 +50,11 @@ class AndroidFiles {
 
         fun temporaryApk(project: Project, flavor: String)
                 = KFiles.joinFileAndMakeDir(AndroidFiles.intermediates(project), "res", "resources$flavor.ap_")
+
+        /** The R.txt directory */
+        val rTxtDir = KFiles.joinDir(KFiles.KOBALT_BUILD_DIR, "symbols")
+
+        val rTxtName = "R.txt"
 
         /**
          * Use the android home define on the project if any, otherwise use the environment variable.
