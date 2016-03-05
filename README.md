@@ -36,7 +36,7 @@ import com.beust.kobalt.plugin.android.*
 You can now use the `android` directive inside your project:
 
 ```
-val p = javaProject {
+val p = project {
     // ...
 
     android {
@@ -62,3 +62,20 @@ The Kobalt Android plug-in introduces a few new tasks (you can get the full list
 
 The plug-in also creates tasks for each of the variants found in your build file, e.g. `installProductionDebug`, `runInternalRelease`, etc...
 
+# Libraries
+
+By default, an Android project will output an apk but you can request an aar file to be produced with the `aar{}`
+directive:
+
+```
+val p = project {
+    // ...
+
+    android {
+        aar {
+        }
+    }
+}
+```
+
+This directive lets you specify additional configuration parameters such as the `name` of the aar file to produce. Refer to the documentation of the `AarConfig` class for more details.
