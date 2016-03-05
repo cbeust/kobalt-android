@@ -620,7 +620,9 @@ fun AndroidConfig.signingConfig(name: String, init: SigningConfig.() -> Unit) : 
     }
 }
 
-class AarConfig{var name: String? = null}
+class AarConfig{
+    var name: String? = null
+}
 
 /**
  * Create an aar file.
@@ -631,6 +633,6 @@ fun AndroidConfig.aar(init: AarConfig.() -> Unit) {
     (Kobalt.findPlugin(AndroidPlugin.PLUGIN_NAME) as AndroidPlugin).addAar(project, aarConfig)
 }
 
-fun main(argv: Array<String>) {
-    com.beust.kobalt.main(argv)
-}
+//fun main(argv: Array<String>) {
+//    com.beust.kobalt.main(argv)
+//}
