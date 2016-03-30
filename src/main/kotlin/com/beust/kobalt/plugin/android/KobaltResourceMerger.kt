@@ -150,8 +150,8 @@ class KobaltResourceMerger {
         val result = arrayListOf<ManifestDependency>()
         dependencies.filter {
                 it.jarFile.get().path.endsWith(".aar")
-            }.forEach {
-                val manifestDependency = shortIds.computeIfAbsent(it.shortId, { create(project, it, shortIds) })
+            }.forEach { dep ->
+                val manifestDependency = shortIds.computeIfAbsent(dep.shortId, { create(project, dep, shortIds) })
                 result.add(manifestDependency)
             }
             return result
