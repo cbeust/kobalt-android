@@ -205,19 +205,16 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
     private fun explodedAarDirectories(project: Project) : List<Pair<IClasspathDependency, File>> {
         val result =
             if (project.dependencies != null) {
-                project.dependencies!!.dependencies.filter { it.isMaven && isAar(MavenId.create(it.id)) }
+                val transitiveDependencies = dependencyManager.calculateDependencies(project, context,
+                        allDependencies = project.dependencies!!.dependencies)
+                transitiveDependencies.filter { it.isMaven && isAar(MavenId.create(it.id)) }
                         .map {
                             Pair(it, File(AndroidFiles.exploded(project, MavenId.create(it.id))))
                         }
             } else {
                 emptyList()
             }
-//        val result = dependencyManager.calculateDependencies(project, context)
-//                .filter { it.isMaven }
-//                .filter { isAar(MavenId.create(it.id)) }
-//                .map {
-//                    Pair(it, File(AndroidFiles.exploded(project, MavenId.create(it.id))))
-//                }
+
         return result
     }
 
