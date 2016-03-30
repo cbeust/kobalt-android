@@ -143,7 +143,8 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
 
     private val preDexFiles = arrayListOf<String>()
 
-    @Task(name = "generateR", description = "Generate the R.java file", runBefore = arrayOf("compile"))
+    @Task(name = "generateR", description = "Generate the R.java file", runAfter = arrayOf("clean"),
+            runBefore = arrayOf ("compile"))
     fun taskGenerateRFile(project: Project): TaskResult {
 
         val aarDependencies = explodeAarFiles(project)
