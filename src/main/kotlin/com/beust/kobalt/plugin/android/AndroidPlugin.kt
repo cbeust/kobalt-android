@@ -9,7 +9,6 @@ import com.beust.kobalt.maven.DependencyManager
 import com.beust.kobalt.maven.MavenId
 import com.beust.kobalt.maven.Md5
 import com.beust.kobalt.maven.dependency.FileDependency
-import com.beust.kobalt.maven.dependency.MavenDependency
 import com.beust.kobalt.misc.*
 import com.google.common.collect.HashMultimap
 import com.google.inject.Inject
@@ -89,7 +88,10 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
     override fun apply(project: Project, context: KobaltContext) {
         super.apply(project, context)
         if (accept(project)) {
-            project.compileDependencies.add(FileDependency(androidJar(project).toString()))
+            classpathEntries.put(project.name, FileDependency(androidJar(project).toString()))
+            project.compileDependencies.filter { it.jarFile.get().path.endsWith("jar")}.forEach {
+                classpathEntries.put(project.name, FileDependency(it.jarFile.get().path))
+            }
 
             taskContributor.addVariantTasks(this, project, context, "generateR", runBefore = listOf("compile"),
                     runTask = { taskGenerateRFile(project) })
@@ -200,12 +202,21 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
     }
 
     private fun explodedAarDirectories(project: Project) : List<Pair<IClasspathDependency, File>> {
-        val result = dependencyManager.calculateTransitiveDependencies(project, context).filter {
-            it.jarFile.get().name.endsWith(".aar")
-        }.map {
-            val mavenId = MavenId.create(it.id)
-            Pair(it, File(AndroidFiles.exploded(project, mavenId)))
-        }
+        val result =
+            if (project.dependencies != null) {
+                project.dependencies!!.dependencies.filter { it.isMaven && isAar(MavenId.create(it.id)) }
+                        .map {
+                            Pair(it, File(AndroidFiles.exploded(project, MavenId.create(it.id))))
+                        }
+            } else {
+                emptyList()
+            }
+//        val result = dependencyManager.calculateDependencies(project, context)
+//                .filter { it.isMaven }
+//                .filter { isAar(MavenId.create(it.id)) }
+//                .map {
+//                    Pair(it, File(AndroidFiles.exploded(project, MavenId.create(it.id))))
+//                }
         return result
     }
 
@@ -343,7 +354,7 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
     }
 
     fun doTaskGenerateDex(project: Project): TaskResult {
-        // Don't run dex if we're producting an aar
+        // Don't run dex if we're producing an aar
         val runDex = aars[project.name] == null
         if (runDex) {
             //
@@ -356,7 +367,7 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
             val outClassesDex = KFiles.joinDir(classesDexDir, classesDex)
 
             val dexSuccess =
-                    runDex(project, outClassesDex, KFiles.joinDir(project.directory, project.classesDir (context)))
+                    runDex(project, outClassesDex, KFiles.joinDir(project.directory, project.classesDir(context)))
 
             val aaptSuccess =
                 if (dexSuccess) {
@@ -481,11 +492,15 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
         }
 
     // ICompilerInterceptor
+    /**
+     * The output directory for the user's classes is kobaltBuild/intermediates/classes/classes (note: two "classes")
+     * since that top directory contains additional directories for dex, pre-dexed, etc...)
+     */
     override fun intercept(project: Project, context: KobaltContext, actionInfo: CompilerActionInfo)
             : CompilerActionInfo {
         val result: CompilerActionInfo =
             if (isAndroid(project)) {
-                val newBuildDir = AndroidFiles.buildDirectory(project)
+                val newBuildDir = project.classesDir(context)
                 actionInfo.copy(outputDir = File(newBuildDir))
             } else {
                 actionInfo
@@ -521,12 +536,13 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
     // IClasspathInterceptor
     override fun intercept(project: Project, dependencies: List<IClasspathDependency>): List<IClasspathDependency> {
         val result = arrayListOf<IClasspathDependency>()
-        dependencies.forEach {
-            if (it is MavenDependency && (isAar(it.mavenId) || it.mavenId.packaging == "aar")) {
-                val newDep = FileDependency(AndroidFiles.explodedClassesJar(project, it.mavenId))
+        dependencies.filter { it.isMaven }.forEach {
+            val mavenId = MavenId.create(it.id)
+            if (isAar(mavenId) || mavenId.packaging == "aar") {
+                val newDep = context.dependencyManager.createFile(AndroidFiles.explodedClassesJar(project, mavenId))
                 result.add(newDep)
-                val id = MavenId.create(it.groupId, it.artifactId, "aar", it.version)
-                result.add(MavenDependency.create(id))
+                val id = MavenId.create(mavenId.groupId, mavenId.artifactId, "aar", it.version)
+                result.add(context.dependencyManager.create(id.toId))
             } else {
                 result.add(it)
             }
@@ -538,7 +554,7 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
     override fun intercept(mavenId: MavenId) : MavenId =
         if (isAar(mavenId)) {
             val version = mavenId.version ?: ""
-            MavenId.createNoInterceptors("${mavenId.groupId}:${mavenId.artifactId}:$version@aar")
+            MavenId.createNoInterceptors("${mavenId.groupId}:${mavenId.artifactId}:aar:$version")
         } else {
             mavenId
         }

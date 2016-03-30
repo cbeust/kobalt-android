@@ -1,6 +1,6 @@
 package com.beust.kobalt.plugin.android
 
-import com.beust.kobalt.Archives
+import com.beust.kobalt.archive.Archives
 import com.beust.kobalt.IFileSpec
 import com.beust.kobalt.JarGenerator
 import com.beust.kobalt.api.KobaltContext

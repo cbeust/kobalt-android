@@ -22,7 +22,7 @@ import com.android.utils.StdLogger
 import com.beust.kobalt.Variant
 import com.beust.kobalt.api.IClasspathDependency
 import com.beust.kobalt.api.Project
-import com.beust.kobalt.maven.dependency.MavenDependency
+import com.beust.kobalt.maven.MavenId
 import com.beust.kobalt.misc.KFiles
 import com.beust.kobalt.misc.KobaltLogger
 import com.beust.kobalt.misc.log
@@ -134,9 +134,9 @@ class KobaltResourceMerger {
     /**
      * Create a ManifestDependency suitable for the Android builder based on a Maven Dependency.
      */
-    private fun create(project: Project, md: MavenDependency, shortIds: HashMap<String, ManifestDependency>) =
+    private fun create(project: Project, md: IClasspathDependency, shortIds: HashMap<String, ManifestDependency>) =
         object: ManifestDependency {
-            override fun getManifest() = File(AndroidFiles.explodedManifest(project, md.mavenId))
+            override fun getManifest() = File(AndroidFiles.explodedManifest(project, MavenId.create(md.id)))
 
             override fun getName() = md.jarFile.get().path
 
@@ -149,12 +149,10 @@ class KobaltResourceMerger {
             : List<ManifestDependency> {
         val result = arrayListOf<ManifestDependency>()
         dependencies.filter {
-                it is MavenDependency && it.jarFile.get().path.endsWith(".aar")
+                it.jarFile.get().path.endsWith(".aar")
             }.forEach {
-                val dep = it as MavenDependency
-                val manifestDependency = shortIds.computeIfAbsent(dep.shortId, { create(project, dep, shortIds) })
+                val manifestDependency = shortIds.computeIfAbsent(it.shortId, { create(project, it, shortIds) })
                 result.add(manifestDependency)
-                it.directDependencies()
             }
             return result
         }
