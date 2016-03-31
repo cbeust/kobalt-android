@@ -570,7 +570,8 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
     private val extraSourceDirectories = arrayListOf(File("src/main/aidl"))
 
     // ISourceDirectoryContributor
-    override fun sourceDirectoriesFor(project: Project, context: KobaltContext): List<File> = extraSourceDirectories
+    override fun sourceDirectoriesFor(project: Project, context: KobaltContext): List<File> =
+            if (configurationFor(project) != null) extraSourceDirectories else emptyList()
 
     // IBuildConfigFieldContributor
     override fun fieldsFor(project: Project, context: KobaltContext): List<BuildConfigField> {
