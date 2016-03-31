@@ -3,6 +3,7 @@ package com.beust.kobalt.plugin.android
 import com.beust.kobalt.*
 import com.beust.kobalt.api.*
 import com.beust.kobalt.api.annotation.Directive
+import com.beust.kobalt.api.annotation.ExportedProjectProperty
 import com.beust.kobalt.api.annotation.IncrementalTask
 import com.beust.kobalt.api.annotation.Task
 import com.beust.kobalt.maven.DependencyManager
@@ -80,6 +81,9 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
         const val TASK_GENERATE_DEX = "generateDex"
         const val TASK_SIGN_APK = "signApk"
         const val TASK_INSTALL= "install"
+
+        @ExportedProjectProperty(doc = "The location of the produced apk")
+        const val PROJECT_PROPERTY_APK_PATH = "apkPath"
     }
 
     override val name = PLUGIN_NAME
@@ -429,7 +433,9 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
                 temporaryApk,
                 signingConfig.keyAlias
             ))
-            log(1, "Created $apk")
+        log(1, "Created $apk")
+
+        project.projectProperties.put(PROJECT_PROPERTY_APK_PATH, apk)
 
         return TaskResult(success == 0)
     }
@@ -648,6 +654,6 @@ fun AndroidConfig.aar(init: AarConfig.() -> Unit) {
     (Kobalt.findPlugin(AndroidPlugin.PLUGIN_NAME) as AndroidPlugin).addAar(project, aarConfig)
 }
 
-//fun main(argv: Array<String>) {
-//    com.beust.kobalt.main(argv)
-//}
+fun main(argv: Array<String>) {
+    com.beust.kobalt.main(argv)
+}
