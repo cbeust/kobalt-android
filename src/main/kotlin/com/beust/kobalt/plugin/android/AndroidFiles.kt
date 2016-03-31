@@ -5,18 +5,10 @@ import com.beust.kobalt.api.KobaltContext
 import com.beust.kobalt.api.Project
 import com.beust.kobalt.maven.MavenId
 import com.beust.kobalt.misc.KFiles
-import java.io.File
 
 class AndroidFiles {
     companion object {
-        /**
-         * The build directory is returned by the build directory interceptor so it should not containt
-         * the project directory (which will be added separately by Kobalt when creating the CompilerActionInfo object
-         */
-        fun buildDirectory(project: Project) = KFiles.joinDir(project.buildDirectory, "intermediates", "classes")
-
-        fun intermediates(project: Project) = KFiles.joinDir(project.directory) + File.separatorChar +
-                buildDirectory(project)
+        fun intermediates(project: Project) = KFiles.joinDir(project.directory, "intermediates", "classes")
 
         fun assets(project: Project) = KFiles.joinDir(intermediates(project), "assets")
 
@@ -32,7 +24,7 @@ class AndroidFiles {
                 project.buildDirectory, "generated", "source", "aidl", context.variant.toIntermediateDir())
 
         fun mergedResourcesNoVariant(project: Project) =
-                KFiles.joinAndMakeDir(AndroidFiles.intermediates(project), "res", "merged")
+                KFiles.joinAndMakeDir(intermediates(project), "res", "merged")
 
         fun mergedResources(project: Project, variant: Variant) =
                 KFiles.joinAndMakeDir(mergedResourcesNoVariant(project), variant.toIntermediateDir())
@@ -44,6 +36,10 @@ class AndroidFiles {
                 KFiles.joinDir(exploded(project, mavenId), "AndroidManifest.xml")
 
         fun aarClassesJar(dir: String) = KFiles.joinDir(dir, "classes.jar")
+
+        fun apk(project: Project, flavor: String)
+                = KFiles.joinFileAndMakeDir(project.directory, project.buildDirectory, "outputs", "apk",
+                        "${project.name}$flavor.apk")
 
         fun explodedClassesJar(project: Project, mavenId: MavenId) = aarClassesJar(
                 KFiles.joinDir(exploded(project, mavenId)))

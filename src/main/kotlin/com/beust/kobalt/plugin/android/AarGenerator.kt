@@ -1,10 +1,10 @@
 package com.beust.kobalt.plugin.android
 
-import com.beust.kobalt.archive.Archives
 import com.beust.kobalt.IFileSpec
 import com.beust.kobalt.JarGenerator
 import com.beust.kobalt.api.KobaltContext
 import com.beust.kobalt.api.Project
+import com.beust.kobalt.archive.Archives
 import com.beust.kobalt.archive.Jar
 import com.beust.kobalt.maven.DependencyManager
 import com.beust.kobalt.misc.From
@@ -33,7 +33,7 @@ class AarGenerator @Inject constructor(val jarGenerator: JarGenerator, val depen
 
         // classes.jar
         val jar = Jar("classes.jar", fatJar = false).apply {
-            include(From(AndroidFiles.buildDirectory(project)), To(""), IFileSpec.GlobSpec("**/*.class"))
+            include(From(AndroidFiles.intermediates(project)), To(""), IFileSpec.GlobSpec("**/*.class"))
         }
         val file = jarGenerator.generateJar(project, context, jar)
         includedFiles.add(IncludedFile(From(file.parentFile.path), To(""),
