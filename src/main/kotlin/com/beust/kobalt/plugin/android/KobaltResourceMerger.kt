@@ -237,8 +237,11 @@ class KobaltResourceMerger {
                     layout.mergeBlame,
                     preprocessor)
             resourceMerger.mergeData(writer, true)
-            ExecutorSingleton.getExecutor().shutdown()
         }
+    }
+
+    fun shutdown() {
+        ExecutorSingleton.getExecutor().shutdown()
     }
 
     /**

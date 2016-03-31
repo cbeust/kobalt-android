@@ -45,6 +45,7 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
                 IMavenIdInterceptor, ICompilerContributor, ITemplateContributor, IAssemblyContributor {
 
     override val configurations : HashMap<String, AndroidConfig> = hashMapOf()
+    private val resourceMerger = KobaltResourceMerger()
 
     private val idlCompiler = object: ICompiler {
         override val sourceSuffixes: List<String>
@@ -84,6 +85,10 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
     override val name = PLUGIN_NAME
 
     fun isAndroid(project: Project) = configurationFor(project) != null
+
+    override fun shutdown() {
+        resourceMerger.shutdown()
+    }
 
     override fun apply(project: Project, context: KobaltContext) {
         super.apply(project, context)
@@ -138,9 +143,6 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
 
     private fun adb(project: Project) = "${androidHome(project)}/platform-tools/adb"
 
-    private fun apk(project: Project, flavor: String)
-            = KFiles.joinFileAndMakeDir(project.buildDirectory, "outputs", "apk", "${project.name}$flavor.apk")
-
     private val preDexFiles = arrayListOf<String>()
 
     @Task(name = "generateR", description = "Generate the R.java file", runAfter = arrayOf("clean"),
@@ -149,8 +151,7 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
 
         val aarDependencies = explodeAarFiles(project)
         preDexFiles.addAll(preDex(project, context.variant, aarDependencies))
-        val extraSourceDirs =
-            KobaltResourceMerger().run(project, context.variant, configurationFor(project)!!, aarDependencies)
+        val extraSourceDirs = resourceMerger.run(project, context.variant, configurationFor(project)!!, aarDependencies)
         extraSourceDirectories.addAll(extraSourceDirs.map { File(it) })
 
         return TaskResult(true)
@@ -405,7 +406,7 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
     @Task(name = TASK_SIGN_APK, description = "Sign the apk file", runAfter = arrayOf(TASK_GENERATE_DEX),
             runBefore = arrayOf("assemble"))
     fun taskSignApk(project: Project): TaskResult {
-        val apk = apk(project, context.variant.shortArchiveName)
+        val apk = AndroidFiles.apk(project, context.variant.shortArchiveName)
         val temporaryApk = AndroidFiles.temporaryApk(project, context.variant.shortArchiveName)
         val buildType = context.variant.buildType.name
 
@@ -444,7 +445,7 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
                 = input.filter { it.contains("Success")}.size > 0
         }
 
-        val apk = apk(project, context.variant.shortArchiveName)
+        val apk = AndroidFiles.apk(project, context.variant.shortArchiveName)
         val result = AdbInstall().useErrorStreamAsErrorIndicator(true).run(
                 args = listOf("install", "-r", apk))
         log(1, "Installed $apk")
