@@ -350,9 +350,10 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
     fun taskGenerateDex(project: Project): IncrementalTaskInfo {
         File(project.classesDir(context)).mkdirs()
         return IncrementalTaskInfo(
-                inputChecksum = inputChecksum(project.classesDir(context)),
-                outputChecksum = { -> null }, // TODO: return real checksum
-                task = { project -> doTaskGenerateDex(project) }
+                inputChecksum = { inputChecksum(project.classesDir(context)) },
+                outputChecksum = { null }, // TODO: return real checksum
+                task = { project -> doTaskGenerateDex(project) },
+                context = context
         )
     }
 
