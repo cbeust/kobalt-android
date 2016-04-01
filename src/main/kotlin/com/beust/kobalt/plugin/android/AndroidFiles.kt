@@ -8,7 +8,8 @@ import com.beust.kobalt.misc.KFiles
 
 class AndroidFiles {
     companion object {
-        fun intermediates(project: Project) = KFiles.joinDir(project.directory, "intermediates", "classes")
+        fun intermediates(project: Project) = KFiles.joinDir(KFiles.KOBALT_BUILD_DIR,
+                project.directory, "intermediates", "classes")
 
         fun assets(project: Project) = KFiles.joinDir(intermediates(project), "assets")
 
