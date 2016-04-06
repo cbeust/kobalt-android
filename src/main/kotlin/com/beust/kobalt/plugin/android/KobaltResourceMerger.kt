@@ -74,7 +74,7 @@ class ProjectLayout {
 
 }
 
-class KobaltResourceMerger {
+class KobaltResourceMerger(val androidHome: String) {
     fun run(project: Project, variant: Variant, config: AndroidConfig, aarDependencies: List<File>) : List<String> {
         val result = arrayListOf<String>()
         val level = when(KobaltLogger.LOG_LEVEL) {
@@ -110,8 +110,7 @@ class KobaltResourceMerger {
     private fun createAndroidBuilder(project: Project, config: AndroidConfig, logger: ILogger): AndroidBuilder {
         val processExecutor = DefaultProcessExecutor(logger)
         val javaProcessExecutor = KobaltJavaProcessExecutor()
-        val androidHome = File(AndroidFiles.androidHome(project, config))
-        val sdkLoader : SdkLoader = DefaultSdkLoader.getLoader(androidHome)
+        val sdkLoader : SdkLoader = DefaultSdkLoader.getLoader(File(androidHome))
         val result = AndroidBuilder(project.name, "kobalt-android-plugin",
                 processExecutor,
                 javaProcessExecutor,
@@ -121,7 +120,7 @@ class KobaltResourceMerger {
 
         val libraryRequests = arrayListOf<LibraryRequest>()
         val sdk = sdkLoader.getSdkInfo(logger)
-        val sdkManager = SdkManager.createManager(androidHome.absolutePath, logger)
+        val sdkManager = SdkManager.createManager(androidHome, logger)
         val maxPlatformTarget = sdkManager.targets.filter { it.isPlatform }.last()
         val maxPlatformTargetHash = AndroidTargetHash.getPlatformHashString(maxPlatformTarget.version)
 

@@ -45,8 +45,10 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
                 IClasspathInterceptor, ISourceDirectoryContributor, IBuildConfigFieldContributor, ITaskContributor,
                 IMavenIdInterceptor, ICompilerContributor, ITemplateContributor, IAssemblyContributor {
 
+    private lateinit var androidHome: String
+
     override val configurations : HashMap<String, AndroidConfig> = hashMapOf()
-    private val resourceMerger = KobaltResourceMerger()
+    private val resourceMerger : KobaltResourceMerger get() = KobaltResourceMerger(androidHome)
 
     private val idlCompiler = object: ICompiler {
         override val sourceSuffixes: List<String>
@@ -96,7 +98,11 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
 
     override fun apply(project: Project, context: KobaltContext) {
         super.apply(project, context)
-        if (accept(project)) {
+        val config = configurationFor(project)
+        if (config != null) {
+            androidHome =
+                SdkUpdater(config.androidHome, config.compileSdkVersion, config.buildToolsVersion).maybeInstall()
+
             classpathEntries.put(project.name, FileDependency(androidJar(project).toString()))
             project.compileDependencies.filter { it.jarFile.get().path.endsWith("jar")}.forEach {
                 classpathEntries.put(project.name, FileDependency(it.jarFile.get().path))
@@ -133,7 +139,7 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
             return version as String
     }
 
-    fun androidHome(project: Project?) = AndroidFiles.androidHome(project, configurationFor(project)!!)
+    fun androidHome(project: Project?) = androidHome //AndroidFiles.androidHome(project, configurationFor(project)!!)
 
     fun androidJar(project: Project): Path =
             Paths.get(androidHome(project), "platforms", "android-${compileSdkVersion(project)}", "android.jar")
@@ -476,11 +482,10 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
     // IRepoContributor
     override fun reposFor(project: Project?): List<HostConfig> {
         val config = configurationFor(project)
-        var home = AndroidFiles.androidHomeNoThrows(project, config)
 
-        return if (home != null) {
-            listOf(KFiles.joinDir(home, "extras", "android", "m2repository"),
-                    (KFiles.joinDir(home, "extras", "google", "m2repository")))
+        return if (config != null) {
+            listOf(KFiles.joinDir(androidHome, "extras", "android", "m2repository"),
+                    (KFiles.joinDir(androidHome, "extras", "google", "m2repository")))
                 .map { HostConfig(Paths.get(it).toUri().toString()) }
         } else {
             emptyList()
