@@ -12,6 +12,14 @@ import java.net.URL
 import java.nio.file.Files
 import java.util.zip.ZipFile
 
+/**
+ * Automatically download the Android SDK if it can't be found and then any other necessary components.
+ * If the Android Home is not passed in parameter, look it up in $ANDROID_HOME and if that variable
+ * isn't defined, download it in ~/.android/android-sdk-<platform>. Adapted from Jake Wharton's SDK Manager Gradle
+ * plug-in.
+ *
+ * @author Cedric Beust <cedric@beust.com>
+ */
 class SdkUpdater(val configAndroidHome: String?, val compileSdkVersion: String?, val buildToolsVersion: String?,
         val dryMode: Boolean = false) {
     val FD_BUILD_TOOLS = com.android.SdkConstants.FD_BUILD_TOOLS
@@ -32,7 +40,7 @@ class SdkUpdater(val configAndroidHome: String?, val compileSdkVersion: String?,
         private fun logVeryVerbose(s: String) = log(3, "      s")
     }
 
-    fun maybeInstall() : String {
+    fun maybeInstall(): String {
         // Android SDK
         androidHome = maybeInstallAndroid()
 
@@ -59,13 +67,13 @@ class SdkUpdater(val configAndroidHome: String?, val compileSdkVersion: String?,
     private val sdk: SdkDownload get() {
         val osName = System.getProperty("os.name").toLowerCase()
         return if (osName.contains("windows")) SdkDownload.WINDOWS
-            else if (osName.contains("mac os x") || osName.contains("darwin")
+        else if (osName.contains("mac os x") || osName.contains("darwin")
                 || osName.contains("osx")) SdkDownload.DARWIN
-            else SdkDownload.LINUX
+        else SdkDownload.LINUX
     }
 
     private fun downloadUrl(sdkVersion: String, suffix: String, ext: String)
-        = "http://dl.google.com/android/android-sdk_r$sdkVersion-$suffix.$ext"
+            = "http://dl.google.com/android/android-sdk_r$sdkVersion-$suffix.$ext"
 
     private val SDK_LATEST_VERSION = "24.4.1"
     private val ANDROID_INSTALL_DIR = KFiles.makeDir(homeDir(".android"))
@@ -76,9 +84,10 @@ class SdkUpdater(val configAndroidHome: String?, val compileSdkVersion: String?,
 
         // Download
         val androidHomeFile = File(androidHome)
-        if (! androidHomeFile.exists()) {
+        if (!androidHomeFile.exists() || !File(androidCommand(androidHome)).exists()) {
+            androidHomeFile.mkdirs()
             val downloadUrl = downloadUrl(SDK_LATEST_VERSION, sdk.platform, sdk.extension)
-            if (! dryMode) {
+            if (!dryMode) {
                 log("Couldn't locate $androidHome, downloading the Android SDK")
                 val downloadedFile = downloadFile(downloadUrl)
                 extractZipFile(ZipFile(downloadedFile), androidHomeFile)
@@ -88,7 +97,7 @@ class SdkUpdater(val configAndroidHome: String?, val compileSdkVersion: String?,
         }
 
         val result = if (androidHomeFile.path.contains("android-sdk")) androidHomeFile
-            else File(androidHomeFile, "android-sdk-${sdk.platform}")
+        else File(androidHomeFile, "android-sdk-${sdk.platform}")
         return result.absolutePath
     }
 
@@ -121,7 +130,7 @@ class SdkUpdater(val configAndroidHome: String?, val compileSdkVersion: String?,
     /**
      * Download the given file to a file.
      */
-    private fun downloadFile(url: String) : File {
+    private fun downloadFile(url: String): File {
         val buffer = ByteArray(1000000)
         val hasTerminal = System.console() != null
         log("Downloading " + url)
@@ -155,18 +164,20 @@ class SdkUpdater(val configAndroidHome: String?, val compileSdkVersion: String?,
         }
     }
 
+    private fun androidCommand(androidHome: String) = KFiles.joinDir(androidHome, "tools",
+            SdkConstants.androidCmdName())
+
     /**
      * Launch the "android" command with the given filter.
      */
     private fun update(filter: String) {
-        val command = KFiles.joinDir(androidHome, "tools", SdkConstants.androidCmdName())
-
-        val fullCommand = listOf(command, "update", "sdk", "--all", "--filter", filter, "--no-ui") +
-            (if (dryMode) listOf("-n") else emptyList())
+        val fullCommand = listOf(androidCommand(androidHome), "update", "sdk", "--all", "--filter", filter,
+                "--no-ui") +
+                (if (dryMode) listOf("-n") else emptyList())
         logVerbose("Launching " + fullCommand.joinToString(" "))
         val process = ProcessBuilder(fullCommand)
-            .redirectErrorStream(true)
-            .start()
+                .redirectErrorStream(true)
+                .start()
 
         // Press 'y' and then enter on the license prompt.
         OutputStreamWriter(process.outputStream).use {
@@ -187,6 +198,6 @@ class SdkUpdater(val configAndroidHome: String?, val compileSdkVersion: String?,
 }
 
 fun main(argv: Array<String>) {
-//    SdkDownload.downloader.download()
+    //    SdkDownload.downloader.download()
     SdkUpdater("/Users/beust/android/android-sdk-macosx", "22", "21.1.0").maybeInstall()
 }
