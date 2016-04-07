@@ -9,6 +9,7 @@ import java.io.FileOutputStream
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 import java.net.URL
+import java.nio.file.Files
 import java.util.zip.ZipFile
 
 /**
@@ -102,7 +103,7 @@ class SdkUpdater(val configAndroidHome: String?, val compileSdkVersion: String?,
                 } else {
                     log("Found an existing distribution, not downloading it again")
                 }
-                extractZipFile(ZipFile(zipFile), androidHomeDir)
+                extractZipFile(ZipFile(zipFile), File(androidBaseDir))
                 File(androidCommand(androidHomeDir.absolutePath)).setExecutable(true)
             } else {
                 logVerbose("dryMode is enabled, not downloading $downloadUrl")
@@ -148,16 +149,17 @@ class SdkUpdater(val configAndroidHome: String?, val compileSdkVersion: String?,
         val hasTerminal = System.console() != null
         log("Downloading " + url)
         val from = URL(url).openConnection().inputStream
-        val tmpFile = File(homeDir("t", "android.zip.tmp"))
-        val to = tmpFile.outputStream()
-
-        var bytesRead = from.read(buffer)
-        var bytesSoFar = 0L
-        while (bytesRead != -1) {
-            to.write(buffer, 0, bytesRead)
-            bytesSoFar += bytesRead.toLong()
-            bytesRead = from.read(buffer)
+        val tmpFile = Files.createTempFile("kobalt-android-sdk", "").toFile()
+        tmpFile.outputStream().use { to ->
+            var bytesRead = from.read(buffer)
+            var bytesSoFar = 0L
+            while (bytesRead != -1) {
+                to.write(buffer, 0, bytesRead)
+                bytesSoFar += bytesRead.toLong()
+                bytesRead = from.read(buffer)
+            }
         }
+
         val toFile = File(outFile).apply { delete() }
         tmpFile.renameTo(File(outFile))
         logVerbose("Downloaded the Android SDK to $toFile")
