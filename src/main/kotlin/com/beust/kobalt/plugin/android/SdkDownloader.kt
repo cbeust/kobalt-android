@@ -9,7 +9,6 @@ import java.io.FileOutputStream
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 import java.net.URL
-import java.nio.file.Files
 import java.util.zip.ZipFile
 
 /**
@@ -64,40 +63,54 @@ class SdkUpdater(val configAndroidHome: String?, val compileSdkVersion: String?,
         return androidHome
     }
 
-    private val sdk: SdkDownload get() {
-        val osName = System.getProperty("os.name").toLowerCase()
-        return if (osName.contains("windows")) SdkDownload.WINDOWS
-        else if (osName.contains("mac os x") || osName.contains("darwin")
-                || osName.contains("osx")) SdkDownload.DARWIN
-        else SdkDownload.LINUX
-    }
+    private val sdk: SdkDownload
+        get() {
+            val osName = System.getProperty("os.name").toLowerCase()
+            return if (osName.contains("windows")) SdkDownload.WINDOWS
+                else if (osName.contains("mac os x") || osName.contains("darwin")
+                    || osName.contains("osx")) SdkDownload.DARWIN
+                else SdkDownload.LINUX
+        }
+
+    private fun androidZip(sdkVersion: String, suffix: String, ext: String)
+            = "android-sdk_r$sdkVersion-$suffix.$ext"
 
     private fun downloadUrl(sdkVersion: String, suffix: String, ext: String)
             = "http://dl.google.com/android/android-sdk_r$sdkVersion-$suffix.$ext"
 
     private val SDK_LATEST_VERSION = "24.4.1"
-    private val ANDROID_INSTALL_DIR = KFiles.makeDir(homeDir(".android"))
+    private val androidBaseDir = homeDir(".android")
+    private fun newAndroidHome(platform: String) = KFiles.makeDir(androidBaseDir, "android-sdk-$platform")
 
     private fun maybeInstallAndroid(): String {
-        val androidHome = configAndroidHome ?: System.getenv("ANDROID_HOME") ?: ANDROID_INSTALL_DIR.absolutePath
+        val androidHome = configAndroidHome
+                ?: System.getenv("ANDROID_HOME")
+                ?: newAndroidHome(sdk.platform)
         logVerbose("Android home is $androidHome")
 
         // Download
-        val androidHomeFile = File(androidHome)
-        if (!androidHomeFile.exists() || !File(androidCommand(androidHome)).exists()) {
-            androidHomeFile.mkdirs()
+        val zipFile = File(androidBaseDir, androidZip(SDK_LATEST_VERSION, sdk.platform, sdk.extension))
+        val androidHomeDir = newAndroidHome(sdk.platform)
+        val androidCommand = File(androidCommand(androidHomeDir.absolutePath))
+
+        if (! androidHomeDir.exists() || ! androidCommand.exists()) {
             val downloadUrl = downloadUrl(SDK_LATEST_VERSION, sdk.platform, sdk.extension)
             if (!dryMode) {
                 log("Couldn't locate $androidHome, downloading the Android SDK")
-                val downloadedFile = downloadFile(downloadUrl)
-                extractZipFile(ZipFile(downloadedFile), androidHomeFile)
+                if (! zipFile.exists()) {
+                    downloadFile(downloadUrl, zipFile.absolutePath)
+                } else {
+                    log("Found an existing distribution, not downloading it again")
+                }
+                extractZipFile(ZipFile(zipFile), androidHomeDir)
+                File(androidCommand(androidHomeDir.absolutePath)).setExecutable(true)
             } else {
                 logVerbose("dryMode is enabled, not downloading $downloadUrl")
             }
         }
 
-        val result = if (androidHomeFile.path.contains("android-sdk")) androidHomeFile
-        else File(androidHomeFile, "android-sdk-${sdk.platform}")
+        val result = if (androidHomeDir.path.contains("android-sdk")) androidHomeDir
+            else File(androidHomeDir, "android-sdk-${sdk.platform}")
         return result.absolutePath
     }
 
@@ -105,7 +118,7 @@ class SdkUpdater(val configAndroidHome: String?, val compileSdkVersion: String?,
      * Extract the zip file in the given directory.
      */
     private fun extractZipFile(zipFile: ZipFile, destDir: File) {
-        log("Extracting $zipFile")
+        log("Extracting ${zipFile.name}")
         val enumEntries = zipFile.entries()
         while (enumEntries.hasMoreElements()) {
             val file = enumEntries.nextElement()
@@ -117,7 +130,7 @@ class SdkUpdater(val configAndroidHome: String?, val compileSdkVersion: String?,
 
             zipFile.getInputStream(file).use { ins ->
                 f.parentFile.mkdirs()
-                logVerbose("Extracting $f")
+                logVerbose("Extracting ${f.path}")
                 FileOutputStream(f).use { fos ->
                     while (ins.available() > 0) {
                         fos.write(ins.read())
@@ -130,15 +143,13 @@ class SdkUpdater(val configAndroidHome: String?, val compileSdkVersion: String?,
     /**
      * Download the given file to a file.
      */
-    private fun downloadFile(url: String): File {
+    private fun downloadFile(url: String, outFile: String): File {
         val buffer = ByteArray(1000000)
         val hasTerminal = System.console() != null
         log("Downloading " + url)
         val from = URL(url).openConnection().inputStream
         val tmpFile = File(homeDir("t", "android.zip.tmp"))
         val to = tmpFile.outputStream()
-
-        val suffix = with(url.lastIndexOf(".")) { url.substring(this) }
 
         var bytesRead = from.read(buffer)
         var bytesSoFar = 0L
@@ -147,8 +158,8 @@ class SdkUpdater(val configAndroidHome: String?, val compileSdkVersion: String?,
             bytesSoFar += bytesRead.toLong()
             bytesRead = from.read(buffer)
         }
-        val toFile = Files.createTempFile("kobalt-android", suffix).toFile()
-        tmpFile.renameTo(toFile)
+        val toFile = File(outFile).apply { delete() }
+        tmpFile.renameTo(File(outFile))
         logVerbose("Downloaded the Android SDK to $toFile")
         return toFile
     }
@@ -199,5 +210,5 @@ class SdkUpdater(val configAndroidHome: String?, val compileSdkVersion: String?,
 
 fun main(argv: Array<String>) {
     //    SdkDownload.downloader.download()
-    SdkUpdater("/Users/beust/android/android-sdk-macosx", "22", "21.1.0").maybeInstall()
+    SdkUpdater(null, "22", "21.1.0").maybeInstall()
 }

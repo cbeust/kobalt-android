@@ -45,10 +45,29 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
                 IClasspathInterceptor, ISourceDirectoryContributor, IBuildConfigFieldContributor, ITaskContributor,
                 IMavenIdInterceptor, ICompilerContributor, ITemplateContributor, IAssemblyContributor {
 
-    private lateinit var androidHome: String
+    //
+    // Android homes per project
+    //
+    private val androidHomes = hashMapOf<String, String>()
+    private fun androidHome(project: Project) : String {
+        return androidHomes.computeIfAbsent(project.name, {
+            val config = configurationFor(project)
+            if (config != null) {
+                SdkUpdater(config.androidHome, config.compileSdkVersion, config.buildToolsVersion).maybeInstall()
+            } else {
+                throw KobaltException("Should never happen")
+            }
+        })
+    }
+
+    //
+    // Resource mergers per project
+    //
+    private val resourceMergers = hashMapOf<String, KobaltResourceMerger>()
+    private fun resourceMerger(project: Project)
+        = resourceMergers.computeIfAbsent(project.name, { KobaltResourceMerger(androidHome(project)) })
 
     override val configurations : HashMap<String, AndroidConfig> = hashMapOf()
-    private val resourceMerger : KobaltResourceMerger get() = KobaltResourceMerger(androidHome)
 
     private val idlCompiler = object: ICompiler {
         override val sourceSuffixes: List<String>
@@ -93,16 +112,13 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
     fun isAndroid(project: Project) = configurationFor(project) != null
 
     override fun shutdown() {
-        resourceMerger.shutdown()
+        resourceMergers.values.forEach { it.shutdown() }
     }
 
     override fun apply(project: Project, context: KobaltContext) {
         super.apply(project, context)
         val config = configurationFor(project)
         if (config != null) {
-            androidHome =
-                SdkUpdater(config.androidHome, config.compileSdkVersion, config.buildToolsVersion).maybeInstall()
-
             classpathEntries.put(project.name, FileDependency(androidJar(project).toString()))
             project.compileDependencies.filter { it.jarFile.get().path.endsWith("jar")}.forEach {
                 classpathEntries.put(project.name, FileDependency(it.jarFile.get().path))
@@ -139,8 +155,6 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
             return version as String
     }
 
-    fun androidHome(project: Project?) = androidHome //AndroidFiles.androidHome(project, configurationFor(project)!!)
-
     fun androidJar(project: Project): Path =
             Paths.get(androidHome(project), "platforms", "android-${compileSdkVersion(project)}", "android.jar")
 
@@ -161,7 +175,8 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
 
         val aarDependencies = explodeAarFiles(project)
         preDexFiles.addAll(preDex(project, context.variant, aarDependencies))
-        val extraSourceDirs = resourceMerger.run(project, context.variant, configurationFor(project)!!, aarDependencies)
+        val extraSourceDirs = resourceMerger(project)
+                .run(project, context.variant, configurationFor(project)!!, aarDependencies)
         extraSourceDirectories.addAll(extraSourceDirs.map { File(it) })
 
         return TaskResult(true)
@@ -484,6 +499,7 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
         val config = configurationFor(project)
 
         return if (config != null) {
+            val androidHome = androidHome(project!!)
             listOf(KFiles.joinDir(androidHome, "extras", "android", "m2repository"),
                     (KFiles.joinDir(androidHome, "extras", "google", "m2repository")))
                 .map { HostConfig(Paths.get(it).toUri().toString()) }
