@@ -81,17 +81,18 @@ class SdkUpdater(val configAndroidHome: String?, val compileSdkVersion: String?,
 
     private val SDK_LATEST_VERSION = "24.4.1"
     private val androidBaseDir = homeDir(".android")
-    private fun newAndroidHome(platform: String) = KFiles.makeDir(androidBaseDir, "android-sdk-$platform")
+    private fun newAndroidHome(platform: String) =
+            KFiles.makeDir(androidBaseDir, "android-sdk-$platform").absolutePath
 
     private fun maybeInstallAndroid(): String {
         val androidHome = configAndroidHome
                 ?: System.getenv("ANDROID_HOME")
                 ?: newAndroidHome(sdk.platform)
+        val androidHomeDir = File(androidHome)
         logVerbose("Android home is $androidHome")
 
         // Download
         val zipFile = File(androidBaseDir, androidZip(SDK_LATEST_VERSION, sdk.platform, sdk.extension))
-        val androidHomeDir = newAndroidHome(sdk.platform)
         val androidCommand = File(androidCommand(androidHomeDir.absolutePath))
 
         if (! androidHomeDir.exists() || ! androidCommand.exists()) {
@@ -110,9 +111,7 @@ class SdkUpdater(val configAndroidHome: String?, val compileSdkVersion: String?,
             }
         }
 
-        val result = if (androidHomeDir.path.contains("android-sdk")) androidHomeDir
-            else File(androidHomeDir, "android-sdk-${sdk.platform}")
-        return result.absolutePath
+        return androidHome
     }
 
     /**
@@ -168,12 +167,11 @@ class SdkUpdater(val configAndroidHome: String?, val compileSdkVersion: String?,
 
     private fun maybeInstall(filter: String, dirList: List<String>) {
         val dir = KFiles.joinDir(androidHome, *dirList.toTypedArray())
-        logVerbose("Maybe install $filter, directory: $dir")
         if (!File(dir).exists()) {
             log("Couldn't find $dir, downloading it...")
             update(filter)
         } else {
-            logVerbose("$dir is up to date")
+            logVerbose("Found $dir")
         }
     }
 
