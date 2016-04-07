@@ -53,7 +53,7 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
         return androidHomes.computeIfAbsent(project.name, {
             val config = configurationFor(project)
             if (config != null) {
-                SdkUpdater(config.androidHome, config.compileSdkVersion, config.buildToolsVersion).maybeInstall()
+                SdkUpdater(config.androidHome, config.compileSdkVersion, config.buildToolsVersion).maybeInstall(project)
             } else {
                 throw KobaltException("Should never happen")
             }

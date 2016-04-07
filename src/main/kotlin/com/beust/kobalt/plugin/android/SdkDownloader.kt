@@ -1,9 +1,11 @@
 package com.beust.kobalt.plugin.android
 
 import com.android.SdkConstants
+import com.beust.kobalt.api.Project
 import com.beust.kobalt.homeDir
 import com.beust.kobalt.misc.KFiles
 import com.beust.kobalt.misc.log
+import com.beust.kobalt.misc.warn
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStreamReader
@@ -40,9 +42,11 @@ class SdkUpdater(val configAndroidHome: String?, val compileSdkVersion: String?,
         private fun logVeryVerbose(s: String) = log(3, "      s")
     }
 
-    fun maybeInstall(): String {
+    fun maybeInstall(project: Project): String {
         // Android SDK
         androidHome = maybeInstallAndroid()
+
+        logVerbose("Android home is $androidHome")
 
         // Build tools
         // android update sdk --all --filter build-tools-21.1.0 --no-ui
@@ -61,8 +65,33 @@ class SdkUpdater(val configAndroidHome: String?, val compileSdkVersion: String?,
             maybeInstall("android-$compileSdkVersion", listOf(FD_PLATFORM, "android-$compileSdkVersion"))
         }
 
+        // Android Support libraries
+        // android update sdk --all --filter extra-android-m2repository --no-ui
+        maybeInstallRepository(project, "com.android.support", "extra-android-m2repository",
+                hasAndroidM2Repository(androidHome))
+
+        // Google Support libraries
+        // android update sdk --all --filter extra-google-m2repository --no-ui
+        maybeInstallRepository(project, "com.google.android", "extra-google-m2repository",
+                hasGoogleM2Repository(androidHome))
+
         return androidHome
     }
+
+    private fun maybeInstallRepository(project: Project, id: String, filter: String, directoryExists: Boolean) {
+        if (! directoryExists && project.compileDependencies.any { it.id.contains(id) }) {
+            logVerbose("Maven repository for $filter not found, downloading it")
+            update(filter)
+        } else {
+            logVerbose("Found Maven repository for $filter")
+        }
+    }
+
+    private fun hasAndroidM2Repository(androidHome: String)
+            = File(KFiles.joinDir(androidHome, "extras", "android", "m2repository")).exists()
+
+    private fun hasGoogleM2Repository(androidHome: String)
+        = File(KFiles.joinDir(androidHome, "extras", "google", "m2repository")).exists()
 
     private val sdk: SdkDownload
         get() {
@@ -89,7 +118,6 @@ class SdkUpdater(val configAndroidHome: String?, val compileSdkVersion: String?,
                 ?: System.getenv("ANDROID_HOME")
                 ?: newAndroidHome(sdk.platform)
         val androidHomeDir = File(androidHome)
-        logVerbose("Android home is $androidHome")
 
         // Download
         val zipFile = File(androidBaseDir, androidZip(SDK_LATEST_VERSION, sdk.platform, sdk.extension))
@@ -181,12 +209,13 @@ class SdkUpdater(val configAndroidHome: String?, val compileSdkVersion: String?,
     /**
      * Launch the "android" command with the given filter.
      */
-    private fun update(filter: String) {
-        val fullCommand = listOf(androidCommand(androidHome), "update", "sdk", "--all", "--filter", filter,
+    private fun update(filter: String) : Int {
+        val fullCommandArgs = listOf(androidCommand(androidHome), "update", "sdk", "--all", "--filter", filter,
                 "--no-ui") +
                 (if (dryMode) listOf("-n") else emptyList())
-        logVerbose("Launching " + fullCommand.joinToString(" "))
-        val process = ProcessBuilder(fullCommand)
+        val fullCommand = fullCommandArgs.joinToString(" ")
+        logVerbose("Launching " + fullCommand)
+        val process = ProcessBuilder(fullCommandArgs)
                 .redirectErrorStream(true)
                 .start()
 
@@ -202,13 +231,17 @@ class SdkUpdater(val configAndroidHome: String?, val compileSdkVersion: String?,
             }
         }
 
-        val rc = process.waitFor()
-
-        log(1, "Result of update: " + rc)
+        val result = process.waitFor()
+        if (result != 0) {
+            warn("$fullCommand didn't complete successfully: $result")
+        } else {
+            logVerbose("$fullCommand completed successfully")
+        }
+        return result
     }
 }
 
 fun main(argv: Array<String>) {
     //    SdkDownload.downloader.download()
-    SdkUpdater(null, "22", "21.1.0").maybeInstall()
+//    SdkUpdater(null, "22", "21.1.0").maybeInstall()
 }
