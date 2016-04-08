@@ -189,8 +189,11 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
         log(2, "Predexing")
         val result = arrayListOf<String>()
         val aarFiles = aarDependencies.map { File(AndroidFiles.aarClassesJar(it.path))}
-        val jarFiles = dependencies(project).map { File(it) }
-        val allDependencies = (aarFiles + jarFiles).toHashSet().filter { it.exists() }
+        val jarFiles = dependencies(project).filter { !isAar(it) }.map { File(it) }
+
+        val allDependencies = (aarFiles + jarFiles).toHashSet().filter {
+            it.path.endsWith("jar") && it.exists()
+        }
 
         allDependencies.forEach { dep ->
             val versionFile = File(dep.path).parentFile
@@ -348,7 +351,7 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
         }
         var hasFiles = false
         if (preDexFiles.size > 0) {
-            args.addAll(preDexFiles.filter { File(it).exists() })
+            args.addAll(preDexFiles.filter { File(it).exists() && it.startsWith(project.directory) })
             hasFiles = true
         }
         if (File(target).isDirectory) {
@@ -553,23 +556,30 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
         }
     }
 
+    private fun isAar(path: String) = path.contains("com.android.support") || path.contains("com.google.android")
+        || path.contains("support-annotations")
+
     private fun isAar(id: MavenId) = (id.groupId == "com.android.support" || id.groupId == "com.google.android")
             && id.artifactId != "support-annotations"
 
+    // IClasspathInterceptor
     /**
      * For each com.android.support dependency or aar packaging, add a classpath dependency that points to the
      * classes.jar inside that (exploded) aar.
      */
-    // IClasspathInterceptor
     override fun intercept(project: Project, dependencies: List<IClasspathDependency>): List<IClasspathDependency> {
         val result = arrayListOf<IClasspathDependency>()
-        dependencies.filter { it.isMaven }.forEach {
-            val mavenId = MavenId.create(it.id)
-            if (isAar(mavenId) || mavenId.packaging == "aar") {
-                val newDep = dependencyManager.createFile(AndroidFiles.explodedClassesJar(project, mavenId))
-                result.add(newDep)
-                val id = MavenId.create(mavenId.groupId, mavenId.artifactId, "aar", it.version)
-                result.add(dependencyManager.create(id.toId))
+        dependencies.forEach {
+            if (it.isMaven) {
+                val mavenId = MavenId.create(it.id)
+                if (isAar(mavenId) || mavenId.packaging == "aar") {
+                    val newDep = dependencyManager.createFile(AndroidFiles.explodedClassesJar(project, mavenId))
+                    result.add(newDep)
+                    val id = MavenId.create(mavenId.groupId, mavenId.artifactId, "aar", it.version)
+                    result.add(dependencyManager.create(id.toId))
+                } else {
+                    result.add(it)
+                }
             } else {
                 result.add(it)
             }
