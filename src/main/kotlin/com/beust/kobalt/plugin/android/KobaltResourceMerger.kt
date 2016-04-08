@@ -280,14 +280,15 @@ class KobaltResourceMerger(val androidHome: String) {
                 setLibraries(libraries)
                 setResFolder(File(AndroidFiles.mergedResources(project, variant)))
                 setAssetsFolder(File(KFiles.joinAndMakeDir(AndroidFiles.intermediates(project), "assets", variantDir)))
-                aaptCommand.setResPackageOutput(AndroidFiles.temporaryApk(project, variant.shortArchiveName))
-                aaptCommand.setSymbolOutputDir(generated)
+                setResPackageOutput(AndroidFiles.temporaryApk(project, variant.shortArchiveName))
+                symbolOutputDir = generated
 
 //            aaptCommand.setSourceOutputDir(generated)
 //            aaptCommand.setPackageForR(pkg)
 //            aaptCommand.setProguardOutput(proguardTxt)
 //            aaptCommand.setType(if (lib) VariantType.LIBRARY else VariantType.DEFAULT)
-//            aaptCommand.setDebuggable(debug)
+//                setDebuggable(true)
+//                setVerbose()
             }
 
             androidBuilder.processResources(aaptCommand, true, processOutputHandler)
