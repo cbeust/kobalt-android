@@ -81,7 +81,7 @@ class SdkUpdater(val configAndroidHome: String?, val compileSdkVersion: String?,
 
     private fun maybeInstallRepository(project: Project, id: String, filter: String, directoryExists: Boolean) {
         if (! directoryExists && project.compileDependencies.any { it.id.contains(id) }) {
-            logVerbose("Maven repository for $filter not found, downloading it")
+            log("Maven repository for $filter not found, downloading it")
             update(filter)
         } else {
             logVerbose("Found Maven repository for $filter")
@@ -127,7 +127,7 @@ class SdkUpdater(val configAndroidHome: String?, val compileSdkVersion: String?,
         if (! androidHomeDir.exists() || ! androidCommand.exists()) {
             val downloadUrl = downloadUrl(SDK_LATEST_VERSION, sdk.platform, sdk.extension)
             if (!dryMode) {
-                log("Couldn't locate $androidHome, downloading the Android SDK")
+                log("Android SDK not found at $androidHome not found, downloading it")
                 if (! zipFile.exists()) {
                     downloadFile(downloadUrl, zipFile.absolutePath)
                 } else {
