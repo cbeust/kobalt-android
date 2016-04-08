@@ -147,7 +147,7 @@ class SdkUpdater(val configAndroidHome: String?, val compileSdkVersion: String?,
     }
 
     /**
-     * Download the given file to a file.
+     * Download the given url to a file.
      */
     private fun downloadFile(url: String, outFile: String): File {
         val buffer = ByteArray(1000000)
