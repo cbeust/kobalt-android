@@ -6,13 +6,14 @@ import com.beust.kobalt.homeDir
 import com.beust.kobalt.misc.KFiles
 import com.beust.kobalt.misc.log
 import com.beust.kobalt.misc.warn
+import org.rauschig.jarchivelib.ArchiveFormat
+import org.rauschig.jarchivelib.ArchiverFactory
+import org.rauschig.jarchivelib.CompressionType
 import java.io.File
-import java.io.FileOutputStream
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 import java.net.URL
 import java.nio.file.Files
-import java.util.zip.ZipFile
 
 /**
  * Automatically download the Android SDK if it can't be found and then any other necessary components.
@@ -132,7 +133,10 @@ class SdkUpdater(val configAndroidHome: String?, val compileSdkVersion: String?,
                 } else {
                     log("Found an existing distribution, not downloading it again")
                 }
-                extractZipFile(ZipFile(zipFile), File(androidBaseDir))
+
+                val archiver = if (sdk.extension == "zip") ArchiverFactory.createArchiver(ArchiveFormat.ZIP)
+                    else ArchiverFactory.createArchiver(ArchiveFormat.TAR, CompressionType.GZIP)
+                archiver.extract(zipFile, File(androidBaseDir))
                 File(androidCommand(androidHomeDir.absolutePath)).setExecutable(true)
             } else {
                 logVerbose("dryMode is enabled, not downloading $downloadUrl")
@@ -140,32 +144,6 @@ class SdkUpdater(val configAndroidHome: String?, val compileSdkVersion: String?,
         }
 
         return androidHome
-    }
-
-    /**
-     * Extract the zip file in the given directory.
-     */
-    private fun extractZipFile(zipFile: ZipFile, destDir: File) {
-        log("Extracting ${zipFile.name}")
-        val enumEntries = zipFile.entries()
-        while (enumEntries.hasMoreElements()) {
-            val file = enumEntries.nextElement()
-            val f = File(destDir.path + File.separator + file.name)
-            if (file.isDirectory) {
-                f.mkdir()
-                continue
-            }
-
-            zipFile.getInputStream(file).use { ins ->
-                f.parentFile.mkdirs()
-                logVerbose("Extracting ${f.path}")
-                FileOutputStream(f).use { fos ->
-                    while (ins.available() > 0) {
-                        fos.write(ins.read())
-                    }
-                }
-            }
-        }
     }
 
     /**
@@ -242,6 +220,12 @@ class SdkUpdater(val configAndroidHome: String?, val compileSdkVersion: String?,
 }
 
 fun main(argv: Array<String>) {
+    val extension = "zip"
+    val archiver = if (extension == "zip") ArchiverFactory.createArchiver(ArchiveFormat.ZIP)
+        else ArchiverFactory.createArchiver(ArchiveFormat.TAR, CompressionType.GZIP)
+    //                archiver.extract(zipFile, File(androidBaseDir))
+    archiver.extract(File(homeDir("t/android-macosx.zip")), File(homeDir("t/abcDir")))
+
     //    SdkDownload.downloader.download()
 //    SdkUpdater(null, "22", "21.1.0").maybeInstall()
 }
