@@ -566,10 +566,10 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
         dependencies.filter { it.isMaven }.forEach {
             val mavenId = MavenId.create(it.id)
             if (isAar(mavenId) || mavenId.packaging == "aar") {
-                val newDep = context.dependencyManager.createFile(AndroidFiles.explodedClassesJar(project, mavenId))
+                val newDep = dependencyManager.createFile(AndroidFiles.explodedClassesJar(project, mavenId))
                 result.add(newDep)
                 val id = MavenId.create(mavenId.groupId, mavenId.artifactId, "aar", it.version)
-                result.add(context.dependencyManager.create(id.toId))
+                result.add(dependencyManager.create(id.toId))
             } else {
                 result.add(it)
             }
