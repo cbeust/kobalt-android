@@ -28,7 +28,7 @@ class AndroidFiles {
                 KFiles.joinAndMakeDir(intermediates(project), "res", "merged")
 
         fun mergedResources(project: Project, variant: Variant) =
-                KFiles.joinAndMakeDir(project.directory, mergedResourcesNoVariant(project), variant.toIntermediateDir())
+                KFiles.joinAndMakeDir(mergedResourcesNoVariant(project), variant.toIntermediateDir())
 
         fun exploded(project: Project, mavenId: MavenId) = KFiles.joinAndMakeDir(
                 intermediates(project), "exploded-aar", mavenId.groupId, mavenId.artifactId, mavenId.version!!)
