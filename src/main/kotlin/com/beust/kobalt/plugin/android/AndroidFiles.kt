@@ -8,8 +8,8 @@ import com.beust.kobalt.misc.KFiles
 
 class AndroidFiles {
     companion object {
-        fun intermediates(project: Project) = KFiles.joinDir(KFiles.KOBALT_BUILD_DIR,
-                project.directory, "intermediates", "classes")
+        fun intermediates(project: Project) = KFiles.joinDir(project.directory, KFiles.KOBALT_BUILD_DIR,
+                "intermediates", "classes")
 
         fun assets(project: Project) = KFiles.joinDir(intermediates(project), "assets")
 
@@ -28,7 +28,7 @@ class AndroidFiles {
                 KFiles.joinAndMakeDir(intermediates(project), "res", "merged")
 
         fun mergedResources(project: Project, variant: Variant) =
-                KFiles.joinAndMakeDir(mergedResourcesNoVariant(project), variant.toIntermediateDir())
+                KFiles.joinAndMakeDir(project.directory, mergedResourcesNoVariant(project), variant.toIntermediateDir())
 
         fun exploded(project: Project, mavenId: MavenId) = KFiles.joinAndMakeDir(
                 intermediates(project), "exploded-aar", mavenId.groupId, mavenId.artifactId, mavenId.version!!)
