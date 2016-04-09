@@ -4,6 +4,7 @@ Android plug-in for [Kobalt](http://beust.com/kobalt).
 
 The Kobalt Android plug-in offers the following features:
 
+- Automatic SDK downloading
 - Resource merging
 - Manifest merging
 - Predexing
@@ -18,6 +19,18 @@ It also supports features already offered by Kobalt itself:
 The plug-in uses Google's Android build library, which guarantees that all these operations are being performed the same way as the official Gradle Android plug-in. This also makes it easier to add new functionalities as they get added to the official Android builder library.
 
 For a full example of a complex Android application being built with Kobalt, take a look at the [Kobalt u2020 fork](https://github.com/cbeust/u2020/blob/build-with-kobalt/kobalt/src/Build.kt).
+
+# SDK Management
+
+Kobalt will automatically everything that is necessary to build Android applications, including:
+
+- The Android SDK
+- Support libraries
+- Build tools
+- etc...
+
+The plug-in will start by looking if `$ANDROID_HOME` is defined and if it is, use it. It it's not defined, the SDK will
+be downloaded in `~/.android-sdk`.
 
 # Build file
 
