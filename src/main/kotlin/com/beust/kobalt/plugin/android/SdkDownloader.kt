@@ -19,7 +19,7 @@ import java.nio.file.Files
 /**
  * Automatically download the Android SDK if it can't be found and then any other necessary components.
  * If the Android Home is not passed in parameter, look it up in $ANDROID_HOME and if that variable
- * isn't defined, download it in ~/.android/android-sdk-<platform>. Adapted from Jake Wharton's SDK Manager Gradle
+ * isn't defined, download it in ~/.android-sdk/. Adapted from Jake Wharton's android-sdk-manager
  * plug-in.
  *
  * @author Cedric Beust <cedric@beust.com>
