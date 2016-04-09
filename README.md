@@ -30,7 +30,7 @@ Kobalt will automatically everything that is necessary to build Android applicat
 - etc...
 
 The plug-in will start by looking if `$ANDROID_HOME` is defined and if it is, use it. It it's not defined, the SDK will
-be downloaded in `~/.android-sdk`.
+be downloaded in `~/.android-sdk`. You can find more details about this feature [in this article](http://beust.com/weblog/2016/04/09/the-kobalt-diaries-automatic-android-sdk-management/).
 
 # Build file
 
