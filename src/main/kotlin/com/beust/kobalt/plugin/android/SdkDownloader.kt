@@ -138,7 +138,7 @@ class SdkUpdater(val configAndroidHome: String?, val compileSdkVersion: String?,
         if (! androidHomeDir.exists() || ! androidCommand.exists()) {
             val downloadUrl = downloadUrl(SDK_LATEST_VERSION, sdk.platform, sdk.extension)
             if (!dryMode) {
-                log("Android SDK not found at $androidHome not found, downloading it")
+                log("Android SDK not found at $androidHome, downloading it")
                 if (! zipFile.exists()) {
                     downloadFile(downloadUrl, zipFile.absolutePath)
                 } else {
