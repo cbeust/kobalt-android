@@ -216,13 +216,22 @@ class SdkUpdater(val configAndroidHome: String?, val compileSdkVersion: String?,
         // Pipe the command output to our log.
         InputStreamReader(process.inputStream).useLines { seq ->
             seq.forEach {
-                logVeryVerbose(it)
+                logVerbose(it)
+            }
+        }
+
+        // Save the error stream in case something goes wrong
+        val errors = arrayListOf<String>()
+        InputStreamReader(process.errorStream).useLines { seq ->
+            seq.forEach {
+                errors.add(it)
             }
         }
 
         val result = process.waitFor()
         if (result != 0) {
             warn("$fullCommand didn't complete successfully: $result")
+            errors.forEach { warn("    $it") }
         } else {
             logVerbose("$fullCommand completed successfully")
         }
