@@ -1,6 +1,7 @@
 package com.beust.kobalt.plugin.android
 
 import com.android.SdkConstants
+import com.beust.kobalt.KobaltException
 import com.beust.kobalt.api.Project
 import com.beust.kobalt.homeDir
 import com.beust.kobalt.misc.KFiles
@@ -29,7 +30,9 @@ class SdkUpdater(val configAndroidHome: String?, val compileSdkVersion: String?,
     val FD_PLATFORM = com.android.SdkConstants.FD_PLATFORMS
     val FD_PLATFORM_TOOLS = com.android.SdkConstants.FD_PLATFORM_TOOLS
 
-    private lateinit var androidHome: String
+    val androidHome: String by lazy {
+        maybeInstallAndroid()
+    }
 
     enum class SdkDownload(val platform: String, val extension: String) {
         WINDOWS("windows", "zip"),
@@ -44,9 +47,6 @@ class SdkUpdater(val configAndroidHome: String?, val compileSdkVersion: String?,
     }
 
     fun maybeInstall(project: Project): String {
-        // Android SDK
-        androidHome = maybeInstallAndroid()
-
         logVerbose("Android home is $androidHome")
 
         // Build tools
@@ -103,25 +103,36 @@ class SdkUpdater(val configAndroidHome: String?, val compileSdkVersion: String?,
                 else SdkDownload.LINUX
         }
 
-    private fun androidZip(sdkVersion: String, suffix: String, ext: String)
+    private fun androidZipName(sdkVersion: String, suffix: String, ext: String)
             = "android-sdk_r$sdkVersion-$suffix.$ext"
 
     private fun downloadUrl(sdkVersion: String, suffix: String, ext: String)
             = "http://dl.google.com/android/android-sdk_r$sdkVersion-$suffix.$ext"
 
     private val SDK_LATEST_VERSION = "24.4.1"
-    private val androidBaseDir = homeDir(".android")
+    private val androidDownloadDirectory = homeDir(".android-sdk")
     private fun newAndroidHome(platform: String) =
-            KFiles.makeDir(androidBaseDir, "android-sdk-$platform").absolutePath
+            KFiles.makeDir(androidDownloadDirectory, "android-sdk-$platform").absolutePath
 
     private fun maybeInstallAndroid(): String {
-        val androidHome = configAndroidHome
-                ?: System.getenv("ANDROID_HOME")
-                ?: newAndroidHome(sdk.platform)
+        val envHome = System.getenv("ANDROID_HOME")
+        fun validAndroidHome(home: String?) = home != null && File(androidCommand(home)).exists()
+        val androidHome =
+            if (envHome != null) {
+                if (! validAndroidHome(envHome)) {
+                    throw KobaltException("Invalid \$ANDROID_HOME $envHome, please specify a valid one or none at all")
+                } else {
+                    envHome
+                }
+            } else {
+                configAndroidHome ?: newAndroidHome(sdk.platform)
+            }
+
         val androidHomeDir = File(androidHome)
 
         // Download
-        val zipFile = File(androidBaseDir, androidZip(SDK_LATEST_VERSION, sdk.platform, sdk.extension))
+        val androidHomeParent = File(androidHome).parentFile
+        val zipFile = File(androidDownloadDirectory, androidZipName(SDK_LATEST_VERSION, sdk.platform, sdk.extension))
         val androidCommand = File(androidCommand(androidHomeDir.absolutePath))
 
         if (! androidHomeDir.exists() || ! androidCommand.exists()) {
@@ -136,7 +147,7 @@ class SdkUpdater(val configAndroidHome: String?, val compileSdkVersion: String?,
 
                 val archiver = if (sdk.extension == "zip") ArchiverFactory.createArchiver(ArchiveFormat.ZIP)
                     else ArchiverFactory.createArchiver(ArchiveFormat.TAR, CompressionType.GZIP)
-                archiver.extract(zipFile, File(androidBaseDir))
+                archiver.extract(zipFile, androidHomeParent)
                 File(androidCommand(androidHomeDir.absolutePath)).setExecutable(true)
             } else {
                 logVerbose("dryMode is enabled, not downloading $downloadUrl")
