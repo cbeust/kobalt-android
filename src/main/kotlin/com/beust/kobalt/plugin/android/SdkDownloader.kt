@@ -216,7 +216,7 @@ class SdkUpdater(val configAndroidHome: String?, val compileSdkVersion: String?,
         // Pipe the command output to our log.
         InputStreamReader(process.inputStream).useLines { seq ->
             seq.forEach {
-                logVerbose(it)
+                logVeryVerbose(it)
             }
         }
 
