@@ -81,7 +81,7 @@ class SdkUpdater(val configAndroidHome: String?, val compileSdkVersion: String?,
 
     private fun maybeInstallRepository(project: Project, id: String, filter: String, directoryExists: Boolean) {
         if (! directoryExists && project.compileDependencies.any { it.id.contains(id) }) {
-            log("Maven repository for $filter not found, downloading it")
+            log("Couldn't find Maven repository for $filter, downloading it")
             update(filter)
         } else {
             logVerbose("Found Maven repository for $filter")
