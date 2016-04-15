@@ -283,7 +283,6 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
                     libsDir.listFiles().filter { it.name.endsWith(".jar") }.forEach {
                         val libJarFile = FileDependency(it.absolutePath)
                         classpathEntries.put(project.name, libJarFile)
-                        jarFiles.add(libJarFile.jarFile.get())
                     }
                 }
             }
@@ -364,15 +363,21 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
             args.add("--verbose")
         }
         var hasFiles = false
-        // TODO: predexFiles and dependencies overlap, so only adding dependencie for now. Next step:
-        // add predexFiles first and then only dependencies that haven't been added as predex files.
-//        if (preDexFiles.size > 0) {
-//            args.addAll(preDexFiles.filter { File(it).exists() && it.startsWith(project.directory) })
-//            hasFiles = true
-//        }
-        dependencies.map { it.jarFile.get() }.filter {
-            ! it.path.endsWith("aar") && ! it.name.contains("android.jar")
-        }.forEach {
+
+        val addedPredexFiles = hashSetOf<String>()
+        if (preDexFiles.size > 0) {
+            val files = preDexFiles.filter { File(it).exists() && it.startsWith(project.directory) }
+            args.addAll(files)
+            addedPredexFiles.addAll(files.map { File(it).name })
+            hasFiles = true
+        }
+
+        // Only add dependencies that haven't been added in predex form
+        val filteredDependencies = dependencies.map { it.jarFile.get() }.filter {
+            ! it.path.endsWith("aar") && ! it.name.contains("android.jar") && it.name != "classes.jar"
+                    && ! addedPredexFiles.contains(it.name)
+        }
+        filteredDependencies.forEach {
             args.add(it.path)
             hasFiles = true
         }
@@ -712,4 +717,4 @@ fun AndroidConfig.aar(init: AarConfig.() -> Unit) {
     (Kobalt.findPlugin(AndroidPlugin.PLUGIN_NAME) as AndroidPlugin).addAar(project, aarConfig)
 }
 
-//fun main(argv: Array<String>) = com.beust.kobalt.main(argv)
+fun main(argv: Array<String>) = com.beust.kobalt.main(argv)
