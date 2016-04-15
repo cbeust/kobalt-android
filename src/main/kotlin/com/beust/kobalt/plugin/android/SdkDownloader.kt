@@ -185,7 +185,7 @@ class SdkUpdater(val configAndroidHome: String?, val compileSdkVersion: String?,
     private fun maybeInstall(filter: String, dirList: List<String>) {
         val dir = KFiles.joinDir(androidHome, *dirList.toTypedArray())
         if (!File(dir).exists()) {
-            log("Couldn't find $dir, downloading it...")
+            log("Couldn't find $dir, downloading it")
             update(filter)
         } else {
             logVerbose("Found $dir")
