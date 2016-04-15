@@ -176,7 +176,7 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
         val aarDependencies = explodeAarFiles(project)
         preDexFiles.addAll(preDex(project, context.variant, aarDependencies))
         val extraSourceDirs = resourceMerger(project)
-                .run(project, context.variant, configurationFor(project)!!, aarDependencies)
+                .run(project, context.variant, configurationFor(project)!!, aarDependencies.directories)
         extraSourceDirectories.addAll(extraSourceDirs.map { File(it) })
 
         return TaskResult(true)
@@ -185,10 +185,10 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
     /**
      * Predex all the libraries that need to be predexed then return a list of them.
      */
-    private fun preDex(project: Project, variant: Variant, aarDependencies: List<File>) : List<String> {
+    private fun preDex(project: Project, variant: Variant, aarInfo: AarInfo) : List<String> {
         log(2, "Predexing")
         val result = arrayListOf<String>()
-        val aarFiles = aarDependencies.map { File(AndroidFiles.aarClassesJar(it.path))}
+        val aarFiles = aarInfo.jarFiles
         val jarFiles = dependencies(project).filter { !isAar(it) }.map { File(it) }
 
         val allDependencies = (aarFiles + jarFiles).toHashSet().filter {
@@ -203,13 +203,14 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
             val outputFile = File(outputDir, name + ".jar")
             if (! outputFile.exists()) {
                 log(2, "  Predexing $dep")
-                if (runDex(project, outputFile.path, dep.path)) {
+                if (runDex(project, outputFile.path, target = dep.path)) {
                     if (outputFile.exists()) result.add(outputFile.path)
                 } else {
                     log(2, "Dex command failed")
                 }
             } else {
                 log(2, "  $dep already predexed")
+                result.add(outputFile.path)
             }
         }
         return result
@@ -247,15 +248,24 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
         return result
     }
 
+    class AarInfo(val directories: List<File>, val jarFiles: List<File>,
+            val dependencies: List<IClasspathDependency>)
+
     /**
      * Extract all the .aar files found in the dependencies and add their android.jar to classpathEntries,
      * which will be added to the classpath at compile time via the classpath interceptor.
+     * @return all the jar files that need to be added to the classpath
      */
-    private fun explodeAarFiles(project: Project) : List<File> {
+    private fun explodeAarFiles(project: Project) : AarInfo {
+        val jarFiles = arrayListOf<File>()
+        val directories = arrayListOf<File>()
+        val dependencies = arrayListOf<IClasspathDependency>()
         log(2, "Exploding aars")
-        val result = arrayListOf<File>()
+
         explodedAarDirectories(project).forEach { pair ->
             val (dep, destDir) = pair
+            directories.add(destDir)
+            dependencies.add(dep)
             val mavenId = MavenId.create(dep.id)
             if (!File(AndroidFiles.explodedManifest(project, mavenId)).exists()) {
                 log(2, "  Exploding ${dep.jarFile.get()} to $destDir")
@@ -271,13 +281,15 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
             File(destDir, "libs").let { libsDir ->
                 if (libsDir.exists()) {
                     libsDir.listFiles().filter { it.name.endsWith(".jar") }.forEach {
-                        classpathEntries.put(project.name, FileDependency(it.absolutePath))
+                        val libJarFile = FileDependency(it.absolutePath)
+                        classpathEntries.put(project.name, libJarFile)
+                        jarFiles.add(libJarFile.jarFile.get())
                     }
                 }
             }
-            result.add(destDir)
+            jarFiles.add(File(AndroidFiles.aarClassesJar(destDir.path)))
         }
-        return result
+        return AarInfo(directories, jarFiles, dependencies)
     }
 
     /**
@@ -338,7 +350,9 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
     /**
      * @return true if dex succeeded
      */
-    private fun runDex(project: Project, outputJarFile: String, target: String) : Boolean {
+    private fun runDex(project: Project, outputJarFile: String,
+            dependencies: List<IClasspathDependency> = emptyList(),
+            target: String) : Boolean {
 //        DexProcessBuilder(File(jarFile)).
         val args = arrayListOf(
                 "-cp", KFiles.joinDir(androidHome(project), "build-tools", buildToolsVersion(project), "lib", "dx.jar"),
@@ -350,19 +364,29 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
             args.add("--verbose")
         }
         var hasFiles = false
-        if (preDexFiles.size > 0) {
-            args.addAll(preDexFiles.filter { File(it).exists() && it.startsWith(project.directory) })
+        // TODO: predexFiles and dependencies overlap, so only adding dependencie for now. Next step:
+        // add predexFiles first and then only dependencies that haven't been added as predex files.
+//        if (preDexFiles.size > 0) {
+//            args.addAll(preDexFiles.filter { File(it).exists() && it.startsWith(project.directory) })
+//            hasFiles = true
+//        }
+        dependencies.map { it.jarFile.get() }.filter {
+            ! it.path.endsWith("aar") && ! it.name.contains("android.jar")
+        }.forEach {
+            args.add(it.path)
             hasFiles = true
         }
-        if (File(target).isDirectory) {
-            val classFiles = KFiles.findRecursively(File(target), { f -> f.endsWith(".class") })
-            if (classFiles.size > 0) {
+        if (dependencies.isEmpty()) {
+            if (File(target).isDirectory) {
+                val classFiles = KFiles.findRecursively(File(target), { f -> f.endsWith(".class") })
+                if (classFiles.size > 0) {
+                    args.add(target)
+                    hasFiles = true
+                }
+            } else {
                 args.add(target)
                 hasFiles = true
             }
-        } else {
-            args.add(target)
-            hasFiles = true
         }
 
         val exitCode = if (hasFiles) DexCommand().run(args) else 0
@@ -395,7 +419,8 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
             val outClassesDex = KFiles.joinDir(classesDexDir, classesDex)
 
             val dexSuccess =
-                    runDex(project, outClassesDex, KFiles.joinDir(project.directory, project.classesDir(context)))
+                    runDex(project, outClassesDex, dependencyManager.calculateDependencies(project, context),
+                            KFiles.joinDir(project.directory, project.classesDir(context)))
 
             val aaptSuccess =
                 if (dexSuccess) {
@@ -687,6 +712,4 @@ fun AndroidConfig.aar(init: AarConfig.() -> Unit) {
     (Kobalt.findPlugin(AndroidPlugin.PLUGIN_NAME) as AndroidPlugin).addAar(project, aarConfig)
 }
 
-//fun main(argv: Array<String>) {
-//    com.beust.kobalt.main(argv)
-//}
+//fun main(argv: Array<String>) = com.beust.kobalt.main(argv)
