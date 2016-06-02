@@ -41,7 +41,7 @@ import java.util.*
 class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager,
         val taskContributor : TaskContributor, val aarGenerator: AarGenerator)
             : BasePlugin(), IConfigActor<AndroidConfig>, IClasspathContributor, IRepoContributor,
-                ICompilerFlagContributor, ICompilerInterceptor, IBuildDirectoryIncerceptor, IRunnerContributor,
+                ICompilerFlagContributor, ICompilerInterceptor, IBuildDirectoryInterceptor, IRunnerContributor,
                 IClasspathInterceptor, ISourceDirectoryContributor, IBuildConfigFieldContributor, ITaskContributor,
                 IMavenIdInterceptor, ICompilerContributor, ITemplateContributor, IAssemblyContributor {
 
@@ -170,7 +170,7 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
     private val preDexFiles = arrayListOf<String>()
 
     @Task(name = "generateR", description = "Generate the R.java file", // runAfter = arrayOf("clean"),
-            runBefore = arrayOf ("compile"))
+            reverseDependsOn = arrayOf ("compile"))
     fun taskGenerateRFile(project: Project): TaskResult {
 
         val aarDependencies = explodeAarFiles(project)
@@ -315,7 +315,7 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
     }
 
     @Task(name = "proguard", description = "Run Proguard, if enabled", runBefore = arrayOf(TASK_GENERATE_DEX),
-            runAfter = arrayOf("compile"))
+            dependsOn = arrayOf("compile"))
     fun taskProguard(project: Project): TaskResult {
         val config = configurationFor(project)
         if (config != null) {
@@ -332,7 +332,6 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
 
     private fun dependencies(project: Project) = dependencyManager.calculateDependencies(project,
             context,
-            project.dependentProjects,
             allDependencies = project.compileDependencies).map {
             it.jarFile.get().path
         }.filterNot {
@@ -463,7 +462,7 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
      * androiddebugkey
      */
     @Task(name = TASK_SIGN_APK, description = "Sign the apk file", runAfter = arrayOf(TASK_GENERATE_DEX),
-            runBefore = arrayOf("assemble"))
+            dependsOn = arrayOf("assemble"))
     fun taskSignApk(project: Project): TaskResult {
         val apk = AndroidFiles.apk(project, context.variant.shortArchiveName)
         val temporaryApk = AndroidFiles.temporaryApk(project, context.variant.shortArchiveName)
@@ -495,7 +494,7 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
         return TaskResult(success == 0)
     }
 
-    @Task(name = TASK_INSTALL, description = "Install the apk file", runAfter = arrayOf(TASK_GENERATE_DEX, "assemble"))
+    @Task(name = TASK_INSTALL, description = "Install the apk file", dependsOn = arrayOf(TASK_GENERATE_DEX, "assemble"))
     fun taskInstall(project: Project): TaskResult {
 
         /**
@@ -605,7 +604,7 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
                 if (isAar(mavenId) || mavenId.packaging == "aar") {
                     val newDep = dependencyManager.createFile(AndroidFiles.explodedClassesJar(project, mavenId))
                     result.add(newDep)
-                    val id = MavenId.create(mavenId.groupId, mavenId.artifactId, "aar", it.version)
+                    val id = MavenId.create(mavenId.groupId, mavenId.artifactId, "aar", null, it.version)
                     result.add(dependencyManager.create(id.toId))
                 } else {
                     result.add(it)
