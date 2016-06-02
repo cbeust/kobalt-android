@@ -3,7 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/kobalt/Build.kt.iml" filepath="$PROJECT_DIR$/kobalt/Build.kt.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/kobalt-android.iml" filepath="$PROJECT_DIR$/.idea/kobalt-android.iml" />
+      <module fileurl="file://$PROJECT_DIR$/kobalt-android.iml" filepath="$PROJECT_DIR$/kobalt-android.iml" />
     </modules>
   </component>
 </project>
