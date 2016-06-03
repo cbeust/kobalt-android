@@ -645,7 +645,7 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
     }
 
     //ITaskContributor
-    override fun tasksFor(context: KobaltContext): List<DynamicTask> = taskContributor.dynamicTasks
+    override fun tasksFor(project: Project, context: KobaltContext): List<DynamicTask> = taskContributor.dynamicTasks
 
     // ITemplateContributor
     override val templates = Templates().templates
