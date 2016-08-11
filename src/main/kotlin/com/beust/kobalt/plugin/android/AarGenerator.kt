@@ -32,7 +32,7 @@ class AarGenerator @Inject constructor(val jarGenerator: JarGenerator, val depen
                 listOf(IFileSpec.FileSpec("AndroidManifest.xml"))))
 
         // classes.jar
-        val jar = Jar("classes.jar", fatJar = false).apply {
+        val jar = Jar(project, "classes.jar", fatJar = false).apply {
             include(From(AndroidFiles.intermediates(project)), To(""), IFileSpec.GlobSpec("**/*.class"))
         }
         val file = jarGenerator.generateJar(project, context, jar)

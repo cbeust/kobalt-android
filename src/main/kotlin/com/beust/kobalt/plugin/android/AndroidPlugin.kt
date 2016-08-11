@@ -69,14 +69,7 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
 
     override val configurations : HashMap<String, AndroidConfig> = hashMapOf()
 
-    private val idlCompiler = object: ICompiler {
-        override val sourceSuffixes: List<String>
-            get() = listOf("aidl", "idl")
-        override val sourceDirectory = "idl"
-
-        /*
-        /Users/beust/android/adt-bundle-mac-x86_64-20140702/sdk/build-tools/23.0.2/aidl -p/Users/beust/android/adt-bundle-mac-x86_64-20140702/sdk/platforms/android-23/framework.aidl -o/Users/beust/t/MaterialAudiobookPlayer/audiobook/build/generated/source/aidl/debug -I/Users/beust/t/MaterialAudiobookPlayer/audiobook/src/main/aidl -I/Users/beust/t/MaterialAudiobookPlayer/audiobook/src/debug/aidl -I/Users/beust/t/MaterialAudiobookPlayer/audiobook/build/intermediates/exploded-aar/com.afollestad.material-dialogs/core/0.8.5.3/aidl -I/Users/beust/t/MaterialAudiobookPlayer/audiobook/build/intermediates/exploded-aar/me.zhanghai.android.materialprogressbar/library/1.1.4/aidl -I/Users/beust/t/MaterialAudiobookPlayer/audiobook/build/intermediates/exploded-aar/com.android.support/recyclerview-v7/23.1.1/aidl -I/Users/beust/t/MaterialAudiobookPlayer/audiobook/build/intermediates/exploded-aar/com.android.support/appcompat-v7/23.1.1/aidl -I/Users/beust/t/MaterialAudiobookPlayer/audiobook/build/intermediates/exploded-aar/com.getbase/floatingactionbutton/1.10.1/aidl -I/Users/beust/t/MaterialAudiobookPlayer/audiobook/build/intermediates/exploded-aar/com.android.support/support-v4/23.1.1/aidl -I/Users/beust/t/MaterialAudiobookPlayer/audiobook/build/intermediates/exploded-aar/com.jakewharton.timber/timber/4.1.0/aidl -I/Users/beust/t/MaterialAudiobookPlayer/audiobook/build/intermediates/exploded-aar/com.github.JakeWharton.RxBinding/rxbinding-kotlin/542cd7e8a4/aidl -I/Users/beust/t/MaterialAudiobookPlayer/audiobook/build/intermediates/exploded-aar/com.github.JakeWharton.RxBinding/rxbinding/542cd7e8a4/aidl -I/Users/beust/t/MaterialAudiobookPlayer/audiobook/build/intermediates/exploded-aar/io.reactivex/rxandroid/1.1.0/aidl -I/Users/beust/t/MaterialAudiobookPlayer/audiobook/build/intermediates/exploded-aar/com.squareup.leakcanary/leakcanary-android/1.4-beta1/aidl -d/var/folders/77/kjr_lq4x5tj5ymxdfvxs6c7c002p8z/T/aidl768872507241036042.d /Users/beust/t/MaterialAudiobookPlayer/audiobook/src/main/aidl/com/android/vending/billing/IInAppBillingService.aidl
-         */
+    private val IDL_COMPILER = object: ICompiler {
         override fun compile(project: Project, context: KobaltContext, info: CompilerActionInfo): TaskResult {
             val version = configurationFor(project)?.compileSdkVersion
             val pArg = "-p" + androidHome(project) + "/platforms/android-$version/framework.aidl"
@@ -95,7 +88,17 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
         }
     }
 
-    override fun compilersFor(project: Project, context: KobaltContext): List<ICompiler> = listOf(idlCompiler)
+    private val IDL_COMPILER_DESCRIPTION = CompilerDescription(
+            "IDL",
+            sourceSuffixes = listOf("aidl", "idl"),
+            sourceDirectory = "idl",
+            compiler = IDL_COMPILER)
+
+        /*
+        /Users/beust/android/adt-bundle-mac-x86_64-20140702/sdk/build-tools/23.0.2/aidl -p/Users/beust/android/adt-bundle-mac-x86_64-20140702/sdk/platforms/android-23/framework.aidl -o/Users/beust/t/MaterialAudiobookPlayer/audiobook/build/generated/source/aidl/debug -I/Users/beust/t/MaterialAudiobookPlayer/audiobook/src/main/aidl -I/Users/beust/t/MaterialAudiobookPlayer/audiobook/src/debug/aidl -I/Users/beust/t/MaterialAudiobookPlayer/audiobook/build/intermediates/exploded-aar/com.afollestad.material-dialogs/core/0.8.5.3/aidl -I/Users/beust/t/MaterialAudiobookPlayer/audiobook/build/intermediates/exploded-aar/me.zhanghai.android.materialprogressbar/library/1.1.4/aidl -I/Users/beust/t/MaterialAudiobookPlayer/audiobook/build/intermediates/exploded-aar/com.android.support/recyclerview-v7/23.1.1/aidl -I/Users/beust/t/MaterialAudiobookPlayer/audiobook/build/intermediates/exploded-aar/com.android.support/appcompat-v7/23.1.1/aidl -I/Users/beust/t/MaterialAudiobookPlayer/audiobook/build/intermediates/exploded-aar/com.getbase/floatingactionbutton/1.10.1/aidl -I/Users/beust/t/MaterialAudiobookPlayer/audiobook/build/intermediates/exploded-aar/com.android.support/support-v4/23.1.1/aidl -I/Users/beust/t/MaterialAudiobookPlayer/audiobook/build/intermediates/exploded-aar/com.jakewharton.timber/timber/4.1.0/aidl -I/Users/beust/t/MaterialAudiobookPlayer/audiobook/build/intermediates/exploded-aar/com.github.JakeWharton.RxBinding/rxbinding-kotlin/542cd7e8a4/aidl -I/Users/beust/t/MaterialAudiobookPlayer/audiobook/build/intermediates/exploded-aar/com.github.JakeWharton.RxBinding/rxbinding/542cd7e8a4/aidl -I/Users/beust/t/MaterialAudiobookPlayer/audiobook/build/intermediates/exploded-aar/io.reactivex/rxandroid/1.1.0/aidl -I/Users/beust/t/MaterialAudiobookPlayer/audiobook/build/intermediates/exploded-aar/com.squareup.leakcanary/leakcanary-android/1.4-beta1/aidl -d/var/folders/77/kjr_lq4x5tj5ymxdfvxs6c7c002p8z/T/aidl768872507241036042.d /Users/beust/t/MaterialAudiobookPlayer/audiobook/src/main/aidl/com/android/vending/billing/IInAppBillingService.aidl
+         */
+
+    override fun compilersFor(project: Project, context: KobaltContext): List<CompilerDescription> = listOf(IDL_COMPILER_DESCRIPTION)
 
     companion object {
         const val PLUGIN_NAME = "Android"
@@ -236,7 +239,7 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
         val result =
             if (project.dependencies != null) {
                 val transitiveDependencies = dependencyManager.calculateDependencies(project, context,
-                        allDependencies = project.dependencies!!.dependencies)
+                        passedDependencies = project.dependencies!!.dependencies)
                 transitiveDependencies.filter { it.isMaven && isAar(MavenId.create(it.id)) }
                         .map {
                             Pair(it, File(AndroidFiles.exploded(project, MavenId.create(it.id))))
@@ -332,7 +335,7 @@ class AndroidPlugin @Inject constructor(val dependencyManager: DependencyManager
 
     private fun dependencies(project: Project) = dependencyManager.calculateDependencies(project,
             context,
-            allDependencies = project.compileDependencies).map {
+            passedDependencies = project.compileDependencies).map {
             it.jarFile.get().path
         }.filterNot {
             it.contains("android.jar") || it.endsWith(".aar") || it.contains("retrolambda")
@@ -716,4 +719,4 @@ fun AndroidConfig.aar(init: AarConfig.() -> Unit) {
     (Kobalt.findPlugin(AndroidPlugin.PLUGIN_NAME) as AndroidPlugin).addAar(project, aarConfig)
 }
 
-fun main(argv: Array<String>) = com.beust.kobalt.main(argv)
+//fun main(argv: Array<String>) = com.beust.kobalt.main(argv)
