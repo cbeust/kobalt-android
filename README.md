@@ -37,7 +37,10 @@ be downloaded in `~/.android-sdk`. You can find more details about this feature 
 You introduce Android inside your project by including the Kobalt Android plug-in:
 
 ```
-val pl = plugins("com.beust:kobalt-android:")
+val bs = buildScript {
+    // ...
+    plugins("com.beust:kobalt-android:$kobaltAndroid")
+}
 ```
 
 Import the symbols:
