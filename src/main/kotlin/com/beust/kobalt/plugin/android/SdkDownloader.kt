@@ -81,7 +81,7 @@ class SdkUpdater(val configAndroidHome: String?, val compileSdkVersion: String?,
 
     private fun maybeInstallRepository(project: Project, id: String, filter: String, directoryExists: Boolean) {
         if (! directoryExists && project.compileDependencies.any { it.id.contains(id) }) {
-            log("Couldn't find Maven repository for $filter, downloading it")
+            log("Downloading Maven repository for $filter")
             update(filter)
         } else {
             logVerbose("Found Maven repository for $filter")
@@ -185,7 +185,7 @@ class SdkUpdater(val configAndroidHome: String?, val compileSdkVersion: String?,
     private fun maybeInstall(filter: String, dirList: List<String>) {
         val dir = KFiles.joinDir(androidHome, *dirList.toTypedArray())
         if (!File(dir).exists()) {
-            log("Couldn't find $dir, downloading it")
+            log("Downloading $dir")
             update(filter)
         } else {
             logVerbose("Found $dir")
