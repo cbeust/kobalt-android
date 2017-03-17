@@ -1,7 +1,7 @@
 package com.beust.kobalt.plugin.android
 
-import com.beust.kobalt.api.FileJarTemplate
 import com.beust.kobalt.api.ITemplateContributor
+import com.beust.kobalt.api.ResourceJarTemplate
 
 /**
  * Run the Android template.
@@ -18,7 +18,7 @@ class Templates : ITemplateContributor {
                     "templates/androidKotlinTemplate.jar")
                     ))
 
-    class Template(info: TemplateInfo) : FileJarTemplate(info.jarFileName) {
+    class Template(info: TemplateInfo) : ResourceJarTemplate(info.jarFileName, Templates::class.java.classLoader) {
         override val templateName = info.name
         override val templateDescription = info.description
         override val pluginName = AndroidPlugin.PLUGIN_NAME
