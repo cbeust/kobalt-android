@@ -1,5 +1,4 @@
 
-import com.beust.kobalt.buildScript
 import com.beust.kobalt.file
 import com.beust.kobalt.homeDir
 import com.beust.kobalt.plugin.kotlin.kotlinCompiler
@@ -7,23 +6,15 @@ import com.beust.kobalt.plugin.packaging.assemble
 import com.beust.kobalt.plugin.publish.bintray
 import com.beust.kobalt.project
 
-val bs = buildScript {
-    repos("https://dl.bintray.com/cbeust/maven")
-}
-
-//val pl = plugins(file(homeDir("kotlin/kobalt-retrolambda/kobaltBuild/libs/kobalt-retrolambda-0.3.jar")))
-
 val dev = false
-val kobaltVersion = 930
-val devVersion = kobaltVersion + 1
-val dependency = "com.beust:kobalt-plugin-api:0.$kobaltVersion"
-val devDependency = file(homeDir("kotlin/kobalt/kobaltBuild/libs/kobalt-0.$devVersion.jar"))
+val kobalt = "com.beust:kobalt-plugin-api:1.0.8"
+val kobaltDev = file(homeDir("kotlin/kobalt/kobaltBuild/libs/kobalt-1.0.13.jar"))
 
 val p = project {
     name = "kobalt-android"
     artifactId = name
     group = "com.beust"
-    version = "0.95"
+    version = "0.98"
 
     dependencies {
 //        provided("org.jetbrains:")
@@ -34,7 +25,7 @@ val p = project {
         // To release, depend on "kobalt-plugin-api". For development, depend on "kobalt", which
         // provides a com.beust.kobalt.main() function so you can start Kobalt loaded with your
         // plug-in directly from your main plug-in class.
-        compile(if (dev) devDependency else dependency)
+        compile(if (dev) kobaltDev else kobalt)
     }
 
     assemble {
