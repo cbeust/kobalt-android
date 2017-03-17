@@ -11,3 +11,5 @@ libs
 out
 .DS_Store
 *.iml
+lib/kotlin-r*.jar
+
